@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astar-navigation"
+version = "0.1.0"
+description = "Action-Label-Free Spatial Trajectory Aggregation and Refinement"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+license = { file = "LICENSE" }
+authors = [{ name = "Yohan Abeysinghe" }]
+dependencies = [
+    "matplotlib==3.10.9",
+    "openpi",
+    "optax==0.2.8",
+    "pyyaml==6.0.3",
+    "wandb==0.26.1",
+]
+
+[project.urls]
+Repository = "https://github.com/YohanAbeysinghe/ASTAR"
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.0.3",
+    "ruff>=0.8.6",
+]
+
+[project.scripts]
+astar-train = "astar.training.aggregation:cli"
+astar-train-distributed = "astar.training.distributed:main"
+astar-eval = "astar.evaluation.aggregation:cli"
+astar-download-pi05 = "astar.tools.download_pi05:main"
+astar-verify = "astar.tools.verify_installation:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["manual: long-running or multi-process test"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["third_party"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+ignore = ["F722"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+force-sort-within-sections = true
+known-third-party = ["wandb"]
+
+[tool.uv.sources]
+openpi = { path = "third_party/openpi", editable = true }
+openpi-client = { path = "third_party/openpi/packages/openpi-client", editable = true }
+
+[tool.uv]
+override-dependencies = [
+    "ml-dtypes==0.4.1",
+    "tensorstore==0.1.74",
+]

@@ -209,6 +209,27 @@ tempCodeRunnerFile.py
 # PyPI configuration file
 .pypirc
 
+# ASTAR runtime artifacts
+checkpoints/**
+!checkpoints/README.md
+data/**
+!data/README.md
+outputs/
+wandb/
+logs/
+slurm-*.out
+slurm-*.err
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+*.onnx
+
+# Local accelerator and plotting caches
+.jax_cache/
+.cache/
+.config/matplotlib/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
