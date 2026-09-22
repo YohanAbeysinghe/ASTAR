@@ -46,10 +46,7 @@ export ASTAR_JAX_COORDINATOR="${COORDINATOR_HOST}:$((20000 + SLURM_JOB_ID % 3000
 
 WANDB_ARGS=(--no-wandb-enabled)
 if [[ "${WANDB_ENABLED:-0}" == "1" ]]; then
-  WANDB_ARGS=(--wandb-enabled)
-  if [[ -n "${WANDB_ENTITY:-}" ]]; then
-    WANDB_ARGS+=(--wandb-entity "${WANDB_ENTITY}")
-  fi
+  WANDB_ARGS=(--wandb-enabled --wandb-entity "${WANDB_ENTITY:-yohan-UMD}")
 fi
 
 # One JAX controller per node and eight-way FSDP within each node. These are
@@ -57,6 +54,7 @@ fi
 srun --kill-on-bad-exit=1 --gpu-bind=none \
   "${TRAIN_COMMAND[@]}" \
   --exp-name "${EXP_NAME:-astar_clean_${SLURM_JOB_ID}}" \
+  --project-name "${WANDB_PROJECT:-ASTAR}" \
   --data-root "${ASTAR_DATA_ROOT}" \
   --train-split-ids-path "${REPO_ROOT}/configs/splits/train_clip_ids.txt" \
   --eval-split-ids-path "${REPO_ROOT}/configs/splits/eval_clip_ids.txt" \

@@ -33,6 +33,7 @@ astar-train-distributed = "astar.training.distributed:main"
 astar-eval = "astar.evaluation.aggregation:cli"
 astar-download-pi05 = "astar.tools.download_pi05:main"
 astar-verify = "astar.tools.verify_installation:main"
+astar-wandb-sidecar = "astar.tools.wandb_sidecar:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

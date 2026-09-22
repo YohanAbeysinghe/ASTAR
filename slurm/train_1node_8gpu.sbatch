@@ -45,10 +45,7 @@ export MPLCONFIGDIR="${MPLCONFIGDIR:-/tmp/astar_mpl_${SLURM_JOB_ID}}"
 
 WANDB_ARGS=(--no-wandb-enabled)
 if [[ "${WANDB_ENABLED:-0}" == "1" ]]; then
-  WANDB_ARGS=(--wandb-enabled)
-  if [[ -n "${WANDB_ENTITY:-}" ]]; then
-    WANDB_ARGS+=(--wandb-entity "${WANDB_ENTITY}")
-  fi
+  WANDB_ARGS=(--wandb-enabled --wandb-entity "${WANDB_ENTITY:-yohan-UMD}")
 fi
 
 # One JAX process with eight-way FSDP. TrainConfig forms checkpoint paths as
@@ -58,6 +55,7 @@ srun --kill-on-bad-exit=1 --gpu-bind=none \
   "${TRAIN_COMMAND[@]}" \
   --config-name checkpoints \
   --exp-name "${EXP_NAME:-astar_0921}" \
+  --project-name "${WANDB_PROJECT:-ASTAR}" \
   --data-root "${ASTAR_DATA_ROOT}" \
   --train-split-ids-path "${REPO_ROOT}/configs/splits/train_clip_ids.txt" \
   --eval-split-ids-path "${REPO_ROOT}/configs/splits/eval_clip_ids.txt" \
