@@ -1086,6 +1086,7 @@ def init_aggregation_wandb(
     config: _config.TrainConfig,
     energy_config: ObstacleEnergyConfig,
     args: argparse.Namespace,
+    modality_counts: dict[str, int],
     *,
     resuming: bool,
 ) -> None:
@@ -1118,6 +1119,8 @@ def init_aggregation_wandb(
             {
                 **vars(args),
                 "aggregation_algorithm_version": AGGREGATION_ALGORITHM_VERSION,
+                "condition_pool_examples": config.batch_size * args.aggregation_batches,
+                "goal_conditioning_counts": modality_counts,
             },
             allow_val_change=True,
         )
@@ -1137,6 +1140,8 @@ def init_aggregation_wandb(
             "replay_factorization": "fixed_conditions_plus_path_direction_history",
             "sampling_prior": "goal_biased_forward_unicycle",
             "aggregation_algorithm_version": AGGREGATION_ALGORITHM_VERSION,
+            "condition_pool_examples": config.batch_size * args.aggregation_batches,
+            "goal_conditioning_counts": modality_counts,
             "collision_weight": energy_config.collision_weight,
             "goal_weight": energy_config.goal_weight,
             "progress_weight": energy_config.progress_weight,
@@ -1465,10 +1470,10 @@ def _validate_args(
     if args.continue_aggregation_until_round < 0:
         raise ValueError("--continue-aggregation-until-round must be nonnegative.")
     if args.continue_aggregation_until_round and (
-        not args.resume or args.replay_only or args.post_aggregation_updates
+        args.replay_only or args.post_aggregation_updates
     ):
         raise ValueError(
-            "--continue-aggregation-until-round requires --resume without replay-only "
+            "--continue-aggregation-until-round cannot be combined with replay-only "
             "or post-aggregation updates."
         )
     if args.post_aggregation_updates < 0:
@@ -2054,7 +2059,13 @@ def main(args: argparse.Namespace) -> None:
             "Model, training pool, and disjoint validation pool preflight completed; exiting."
         )
         return
-    init_aggregation_wandb(config, energy_config, args, resuming=resuming)
+    init_aggregation_wandb(
+        config,
+        energy_config,
+        args,
+        modality_counts,
+        resuming=resuming,
+    )
     peval_rollout = jax.jit(
         functools.partial(
             validation_model_rollout,
@@ -2604,8 +2615,8 @@ def parse_args() -> argparse.Namespace:
         "--continue-aggregation-until-round",
         type=int,
         default=0,
-        help="Explicit resume to an absolute round cap, bypassing validation plateau "
-        "stopping while preserving convergence checks and all cached labels.",
+        help="Force a fresh or resumed run toward an absolute round cap, bypassing "
+        "validation plateau stopping while preserving convergence checks.",
     )
     aggregation.add_argument(
         "--post-aggregation-updates",

@@ -74,3 +74,17 @@ def test_migration_requires_resume_and_cannot_stack_with_cap_migration(monkeypat
     args.relabel_esdf_cutoff_from_config = "/other.json"
     with pytest.raises(ValueError, match="already includes"):
         trainer._validate_args(args, config)
+
+
+def test_forced_round_target_can_start_fresh(monkeypatch):
+    monkeypatch.setattr(
+        "sys.argv",
+        ["trainer", "--exp-name", "multimodal", "--continue-aggregation-until-round", "64"],
+    )
+    args = trainer.parse_args()
+    assert args.aggregation_rounds == args.continue_aggregation_until_round == 64
+    trainer._validate_args(args, trainer.ObstacleEnergyConfig())
+
+    args.post_aggregation_updates = 1
+    with pytest.raises(ValueError, match="cannot be combined"):
+        trainer._validate_args(args, trainer.ObstacleEnergyConfig())

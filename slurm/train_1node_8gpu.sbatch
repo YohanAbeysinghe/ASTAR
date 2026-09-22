@@ -63,8 +63,8 @@ srun --kill-on-bad-exit=1 --gpu-bind=none \
   --checkpoint-base-dir "${REPO_ROOT}" \
   --batch-size 16 --fsdp-devices 8 \
   --action-dim 2 --action-horizon 16 --train-scope adapter \
-  --aggregation-rounds 0 --post-aggregation-updates 0 \
-  --aggregation-batches 8 --eval-batches 2 --updates-per-round 2500 \
+  --continue-aggregation-until-round 64 --post-aggregation-updates 0 \
+  --aggregation-batches 64 --eval-batches 2 --updates-per-round 2500 \
   --benefit-min-rounds 6 --benefit-patience 4 --eval-plot-count 4 \
   --field-time 1.0 \
   --aggregation-step-size-start 0.1 --aggregation-step-size 1.0 \
@@ -75,8 +75,13 @@ srun --kill-on-bad-exit=1 --gpu-bind=none \
   --prior-length-scale 0.25 \
   --prior-max-omega-radps 0.5 --prior-forward-only \
   --prior-goal-heading-fraction 1.0 --prior-goal-heading-limit-rad 1.0471975512 \
-  --sampled-goal-fraction 1.0 --segment-samples 15 \
+  --sampled-goal-fraction 0.16666666666666666 \
+  --object-text-goal-prob 0.3333333333333333 \
+  --object-image-goal-prob 0.3333333333333333 \
+  --object-waypoint-goal-prob 0.16666666666666666 \
+  --require-all-goal-modalities --segment-samples 15 \
   --collision-weight 0 --clearance-weight 1 --clearance-cap-m 0.2 \
+  --esdf-learning-cutoff-m 0.2 \
   --goal-weight 30 --progress-weight 10 \
   --early-heading-weight 0.25 --smoothness-weight 0.5 \
   --max-step-length-m 1.0 --required-progress-fraction 0.9 \

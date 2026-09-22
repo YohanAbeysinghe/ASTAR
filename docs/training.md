@@ -6,9 +6,21 @@ A clean run loads `checkpoints/pi05_base/params`, initializes ASTAR's action
 and goal adapters, and creates a new experiment directory. Do not pass
 `--resume`, `--relabel-*`, or `--migrate-*` to a fresh run.
 
-The checked-in two-node launcher reproduces the current waypoint-only setup:
-`sampled_goal_fraction=1.0`, adapter-only optimization, 16 waypoints, and the
-clearance/goal/progress/heading/smoothness energy objective.
+The checked-in launchers use a fixed 1,024-example multimodal condition pool:
+1/6 sampled goals and 5/6 object goals, with independent text, image, and
+waypoint masks for object goals. Startup fails if any required modality is
+absent. They force aggregation toward 64 rounds while retaining convergence
+stopping, and ignore valid-map obstacle samples at or above 0.2 m for learning.
+The adapter-only optimization, 16-waypoint output, and energy-term weights are
+unchanged.
+
+## Weights & Biases
+
+W&B remains opt-in for Slurm jobs. Enable it with `WANDB_ENABLED=1`; optionally
+set `WANDB_ENTITY` and `WANDB_PROJECT`. Authentication uses `WANDB_API_KEY` or
+credentials previously stored by `wandb login`. The run configuration records
+the requested modality probabilities, the realized modality counts, the 1,024
+example pool size, the ESDF cutoff, and the forced round target.
 
 ## Resume
 
