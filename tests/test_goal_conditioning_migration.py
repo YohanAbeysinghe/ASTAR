@@ -14,6 +14,12 @@ def parsed(monkeypatch):
     return trainer.parse_args()
 
 
+def test_wandb_defaults_to_personal_astar_project(monkeypatch):
+    args = parsed(monkeypatch)
+    assert args.wandb_entity == "yohanab"
+    assert args.project_name == "astar"
+
+
 def source_for(args):
     return {
         **vars(args),

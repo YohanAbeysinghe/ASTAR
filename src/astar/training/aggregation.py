@@ -2571,7 +2571,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--config-name", default="astar_pi05_energy_aggregation"
     )
-    parser.add_argument("--project-name", default="astar-energy")
+    parser.add_argument("--project-name", default="astar")
     parser.add_argument("--exp-name", required=True)
     parser.add_argument("--pretrained-params", default=PI05_BASE_PARAMS)
     parser.add_argument("--action-dim", type=int, default=2, choices=(2,))
@@ -2790,7 +2790,7 @@ def parse_args() -> argparse.Namespace:
     checkpoint.add_argument("--assets-base-dir", default="./assets")
     checkpoint.add_argument("--checkpoint-base-dir", default="./checkpoints")
     checkpoint.add_argument("--fsdp-devices", type=int, default=1)
-    checkpoint.add_argument("--wandb-entity", default=None)
+    checkpoint.add_argument("--wandb-entity", default="yohanab")
     checkpoint.add_argument(
         "--wandb-enabled",
         action=argparse.BooleanOptionalAction,

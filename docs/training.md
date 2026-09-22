@@ -14,13 +14,18 @@ stopping, and ignore valid-map obstacle samples at or above 0.2 m for learning.
 The adapter-only optimization, 16-waypoint output, and energy-term weights are
 unchanged.
 
+For a single node with four RTX A6000 GPUs, use
+`slurm/train_1node_4gpu_a6000.sbatch`. It keeps the global batch at 16 and uses
+four-way FSDP, giving four examples per 48 GB GPU.
+
 ## Weights & Biases
 
-W&B remains opt-in for Slurm jobs. Enable it with `WANDB_ENABLED=1`; optionally
-set `WANDB_ENTITY` and `WANDB_PROJECT`. Authentication uses `WANDB_API_KEY` or
-credentials previously stored by `wandb login`. The run configuration records
-the requested modality probabilities, the realized modality counts, the 1,024
-example pool size, the ESDF cutoff, and the forced round target.
+W&B remains opt-in for Slurm jobs. Enable it with `WANDB_ENABLED=1`. Training
+defaults to the `yohanab/astar` project; `WANDB_ENTITY` and `WANDB_PROJECT` can
+override that destination for Slurm jobs. Authentication uses `WANDB_API_KEY`
+or credentials previously stored by `wandb login`. The run configuration
+records the requested modality probabilities, the realized modality counts,
+the 1,024 example pool size, the ESDF cutoff, and the forced round target.
 
 ## Resume
 
