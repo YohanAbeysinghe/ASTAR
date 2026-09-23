@@ -15,39 +15,49 @@ from astar.waypoint_energy import compute_obstacle_energy
 
 def fixture():
     paths = jnp.asarray([[[0., 0.], [1., 0.], [2., 0.]]])
-    metrics = dict(esdf=jnp.full((1, 64, 64), .2), esdf_x_min=jnp.asarray([0.]),
+    metrics = dict(esdf=jnp.full((1, 64, 64), .75), esdf_x_min=jnp.asarray([0.]),
                    esdf_y_min=jnp.asarray([-3.2]), esdf_resolution=jnp.asarray([.1]),
                    robot_radius_m=jnp.asarray([.5]), goal_xy=jnp.asarray([[3., 0.]]))
     config = ObstacleEnergyConfig(
         collision_weight=0., clearance_weight=1., goal_weight=0., progress_weight=0.,
         early_heading_weight=0., smoothness_weight=0., safety_margin_m=.25,
         segment_samples=1, max_step_length_m=2., strict_esdf_coverage=True,
-        esdf_ramp_start_m=0., esdf_min_x_m=.1, esdf_learning_cutoff_m=.2)
+        esdf_ramp_start_m=0., esdf_min_x_m=.1, esdf_learning_cutoff_m=.25)
     return paths, metrics, config
 
 
-@pytest.mark.parametrize("distance,active", [(-.1, True), (.19, True), (.2, False), (.21, False)])
-def test_cutoff_loss_and_gradient_boundary(distance, active):
+@pytest.mark.parametrize(
+    "distance,expected_loss,active",
+    [(.4, .35**2, True), (.69, .06**2, True), (.75, 0., False), (.76, 0., False)],
+)
+def test_footprint_clearance_hinge_and_cutoff_boundary(distance, expected_loss, active):
     paths, metrics, config = fixture()
     def energy(d):
         return compute_obstacle_energy(paths, metrics | {"esdf": jnp.full((1, 64, 64), d)}, config)[0]
     loss, gradient = jax.jit(jax.value_and_grad(energy))(jnp.asarray(distance))
+    np.testing.assert_allclose(loss, expected_loss, atol=1e-6)
     if active:
-        np.testing.assert_allclose(loss, -distance, atol=1e-6)
         assert float(gradient) < 0.
     else:
         assert float(loss) == 0.
         assert float(gradient) == 0.
 
 
-def test_cutoff_preserves_raw_safety_and_can_be_disabled():
+def test_cutoff_preserves_physical_collision_and_margin_metrics():
     paths, metrics, config = fixture()
     loss, info = compute_obstacle_energy(paths, metrics, config)
     old_loss, old_info = compute_obstacle_energy(paths, metrics, dataclasses.replace(config, esdf_learning_cutoff_m=None))
-    assert float(loss) == 0. and float(old_loss) < 0.
-    for key in ("collision_rate", "unsafe_rate", "min_esdf_m", "invalid_esdf_rate"):
+    assert float(loss) == 0. and float(old_loss) == 0.
+    for key in (
+        "collision_rate",
+        "unsafe_rate",
+        "clearance_violation_rate",
+        "min_esdf_m",
+        "invalid_esdf_rate",
+    ):
         np.testing.assert_array_equal(info[key], old_info[key])
-    assert float(info["collision_rate"]) == 1.
+    assert float(info["collision_rate"]) == 0.
+    assert float(info["clearance_violation_rate"]) == 0.
 
 
 def test_out_of_map_retains_recovery_gradient_with_cutoff():
@@ -57,14 +67,18 @@ def test_out_of_map_retains_recovery_gradient_with_cutoff():
     loss, info = compute_obstacle_energy(paths, metrics, config)
     gradient = jax.grad(lambda x: compute_obstacle_energy(x, metrics, config)[0])(paths)
     assert float(loss) > 0. and float(info["invalid_esdf_rate"]) > 0.
-    assert np.isfinite(gradient).all() and float(gradient[0, 2, 0]) > 0.
+    assert np.isfinite(gradient).all()
+    # Projection may route the endpoint recovery gradient through its
+    # predecessor when the final raw segment is at the dynamic cap.
+    assert float(jnp.sum(gradient[0, 1:, 0])) > 0.
 
 
 def test_goal_learning_is_not_disabled_by_esdf_cutoff():
     paths, metrics, config = fixture()
     config = dataclasses.replace(config, goal_weight=1.)
     gradient = jax.grad(lambda x: compute_obstacle_energy(x, metrics, config)[0])(paths)
-    assert float(gradient[0, -1, 0]) < 0.
+    assert np.all(np.asarray(gradient[0, 1:, 0]) < 0.)
+    assert abs(float(gradient[0, -1, 0])) > abs(float(gradient[0, 1, 0]))
 
 
 def test_disabled_signature_is_backward_compatible(monkeypatch):
@@ -79,7 +93,7 @@ def test_disabled_signature_is_backward_compatible(monkeypatch):
 def test_cutoff_migration_can_enable_adjust_and_disable_only_cutoff(monkeypatch):
     monkeypatch.setattr("sys.argv", ["trainer", "--exp-name", "original"])
     args = trainer.parse_args()
-    for old_cutoff, new_cutoff in ((None, .2), (.2, .3), (.2, None)):
+    for old_cutoff, new_cutoff in ((None, .25), (.25, .3), (.25, None)):
         args.esdf_learning_cutoff_m = old_cutoff
         source = {**vars(args), "aggregation_algorithm_version": trainer.AGGREGATION_ALGORITHM_VERSION,
                   "process_count": jax.process_count()}

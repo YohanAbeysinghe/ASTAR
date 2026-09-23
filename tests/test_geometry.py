@@ -92,6 +92,95 @@ def test_quarter_prior_scale_preserves_shape_and_scales_distance() -> None:
     assert short_length == pytest.approx(0.25 * full_length, abs=1.0e-6)
 
 
+def test_goal_aware_segment_cap_uses_divided_length_and_detour_allowance() -> None:
+    _, metrics, config = _energy_fixture()
+    metrics = metrics | {"goal_xy": jnp.asarray([[0.6, 0.0]], dtype=jnp.float32)}
+    config = dataclasses.replace(
+        config,
+        max_step_length_m=1.0,
+        path_detour_factor=1.25,
+    )
+    raw_path = jnp.asarray(
+        [[[0.0, 0.0], [0.4, 0.0], [0.8, 0.0], [1.2, 0.0]]],
+        dtype=jnp.float32,
+    )
+
+    decoded, _ = decode_bounded_waypoint_path(raw_path, metrics, config)
+    segment_lengths = np.linalg.norm(np.diff(np.asarray(decoded), axis=1), axis=-1)
+
+    # 0.6 m / 3 segments * 1.25 detour allowance = 0.25 m per segment.
+    np.testing.assert_allclose(segment_lengths, 0.25, atol=1.0e-6)
+
+
+def test_goal_progress_has_zero_origin_weight_and_linearly_stronger_future_weights() -> None:
+    _, metrics, config = _energy_fixture()
+    path = jnp.asarray(
+        [[[0.0, 0.0], [0.05, 0.0], [0.10, 0.0], [0.15, 0.0]]],
+        dtype=jnp.float32,
+    )
+
+    gradient = jax.grad(
+        lambda candidate: compute_obstacle_energy(candidate, metrics, config)[0]
+    )(path)
+    x_gradient = np.asarray(gradient[0, :, 0])
+
+    assert x_gradient[0] == pytest.approx(0.0, abs=1.0e-8)
+    assert np.all(x_gradient[1:] < 0.0)
+    assert abs(x_gradient[1]) < abs(x_gradient[2]) < abs(x_gradient[3])
+
+    zero_path = jnp.zeros_like(path)
+    _, info = compute_obstacle_energy(zero_path, metrics, config)
+    fractions = np.arange(1, 4, dtype=np.float32) / 3.0
+    np.testing.assert_allclose(
+        info["goal_energy"],
+        np.sum(fractions**3),
+        atol=1.0e-5,
+    )
+
+
+@pytest.mark.parametrize(
+    ("raw_esdf_m", "expected_collision", "expected_clearance_violation"),
+    [
+        (0.40, 1.0, 1.0),  # 0.40 - 0.50 = -0.10 m: physical collision.
+        (0.60, 0.0, 1.0),  # 0.10 m footprint clearance: below the 0.25 m target.
+        (0.75, 0.0, 0.0),  # Exactly 0.25 m outside the footprint.
+    ],
+)
+def test_clearance_target_is_applied_after_robot_radius(
+    raw_esdf_m: float,
+    expected_collision: float,
+    expected_clearance_violation: float,
+) -> None:
+    paths = jnp.asarray([[[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]]])
+    metrics = {
+        "esdf": jnp.full((1, 64, 64), raw_esdf_m),
+        "esdf_x_min": jnp.asarray([0.0]),
+        "esdf_y_min": jnp.asarray([-3.2]),
+        "esdf_resolution": jnp.asarray([0.1]),
+        "robot_radius_m": jnp.asarray([0.5]),
+        "goal_xy": jnp.asarray([[3.0, 0.0]]),
+    }
+    config = ObstacleEnergyConfig(
+        clearance_weight=1.0,
+        goal_weight=0.0,
+        progress_weight=0.0,
+        early_heading_weight=0.0,
+        smoothness_weight=0.0,
+        safety_margin_m=0.25,
+        segment_samples=1,
+        max_step_length_m=2.0,
+        esdf_ramp_start_m=0.0,
+        esdf_min_x_m=0.1,
+        strict_esdf_coverage=True,
+    )
+
+    energy, info = compute_obstacle_energy(paths, metrics, config)
+
+    assert float(info["collision_rate"]) == expected_collision
+    assert float(info["clearance_violation_rate"]) == expected_clearance_violation
+    assert (float(energy) > 0.0) is bool(expected_clearance_violation)
+
+
 def test_oracle_label_is_projection_aware_and_non_energy_increasing() -> None:
     paths, metrics, config = _energy_fixture()
     direction, info = query_energy_oracle(

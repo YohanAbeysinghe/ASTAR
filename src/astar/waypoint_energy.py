@@ -37,11 +37,16 @@ class ObstacleEnergyConfig:
     progress_weight: float = 0.1
     early_heading_weight: float = 0.5
     smoothness_weight: float = 0.1
-    safety_margin_m: float = 0.0
-    clearance_cap_m: float = 0.2
-    # None preserves the original objective. Valid samples at/above this raw
-    # signed distance contribute no obstacle loss/gradient. Safety metrics
-    # and penalties for unobserved/out-of-map geometry remain unchanged.
+    # Desired free space outside the robot footprint. Raw ESDF is converted to
+    # footprint clearance by subtracting robot_radius_m before this target is
+    # applied. Physical collision remains footprint_clearance < 0.
+    safety_margin_m: float = 0.25
+    # Deprecated configuration field retained in saved configs. Algorithm v7
+    # ignores it; safety_margin_m is the sole optimized clearance target.
+    clearance_cap_m: float = 0.25
+    # Optional cutoff in FOOTPRINT-CLEARANCE space. A cutoff at or above the
+    # safety margin is redundant with the hinge, but remains for checkpoint
+    # compatibility and controlled replay migrations.
     esdf_learning_cutoff_m: float | None = None
     esdf_ramp_start_m: float = 0.5
     esdf_min_x_m: float = 2.0
@@ -51,6 +56,9 @@ class ObstacleEnergyConfig:
     min_step_scale_m: float = 0.1
     segment_samples: int = 6
     max_step_length_m: float = 0.4
+    # Allow a path to be longer than the straight-line goal distance while
+    # retaining the physical max_step_length_m hard cap.
+    path_detour_factor: float = 1.25
     max_increment_correction_m: float = 0.08
     prior_goal_heading_fraction: float = 1.0
     prior_goal_heading_limit_rad: float = 1.0471975512
@@ -102,6 +110,37 @@ def _safe_unit(x: at.Array, axis: int = -1, eps: float = 1.0e-6) -> at.Array:
     return x / jnp.sqrt(squared_norm + eps_array)
 
 
+def max_segment_length_per_path(
+    metric_tensors: dict[str, at.Array],
+    batch_size: int,
+    num_segments: int,
+    dtype,
+    energy_config: ObstacleEnergyConfig,
+) -> at.Array:
+    """Return a goal-aware per-path segment cap with explicit detour slack.
+
+    The intended horizon length is the smaller of the goal distance and the
+    physical horizon. Dividing it by the number of segments gives the nominal
+    spacing; path_detour_factor adds explicit room for obstacle detours. The
+    configured max_step_length_m remains a hard dynamics cap.
+    """
+    if num_segments <= 0:
+        raise ValueError("A waypoint path must contain at least one segment.")
+    hard_cap = jnp.asarray(energy_config.max_step_length_m, dtype=dtype)
+    if "goal_xy" not in metric_tensors:
+        return jnp.full((batch_size,), hard_cap, dtype=dtype)
+    goal_xy = jnp.asarray(metric_tensors["goal_xy"], dtype=dtype)
+    goal_distance = jnp.linalg.norm(goal_xy, axis=-1)
+    physical_horizon = jnp.asarray(num_segments, dtype=dtype) * hard_cap
+    intended_length = jnp.minimum(goal_distance, physical_horizon)
+    detour_cap = (
+        jnp.asarray(energy_config.path_detour_factor, dtype=dtype)
+        * intended_length
+        / jnp.asarray(num_segments, dtype=dtype)
+    )
+    return jnp.broadcast_to(jnp.minimum(hard_cap, detour_cap), (batch_size,))
+
+
 def decode_bounded_waypoint_path(
     raw_actions: _model.Actions,
     metric_tensors: dict[str, at.Array],
@@ -111,10 +150,10 @@ def decode_bounded_waypoint_path(
 
     Both the structured prior and the corrected model output are absolute local
     `(x, y)` waypoints. Slot zero is fixed to the robot origin. Each subsequent
-    candidate displacement is radially clipped to max_step_length_m, then
-    integrated from the already projected predecessor. A valid structured prior
-    therefore decodes unchanged; the projection only repairs an excessive
-    residual-model jump.
+    candidate displacement is radially clipped to the smaller of the physical
+    hard cap and the goal-aware straight-line spacing plus explicit detour
+    allowance, then integrated from the already projected predecessor. A valid
+    structured prior therefore decodes unchanged unless it exceeds that cap.
     """
     raw_metric = maybe_unnormalize_actions(raw_actions, metric_tensors)[..., :2]
     finite_waypoints = jnp.all(jnp.isfinite(raw_metric), axis=-1)
@@ -122,7 +161,14 @@ def decode_bounded_waypoint_path(
     candidate = candidate.at[:, 0, :].set(0.0)
     raw_increments = candidate[:, 1:, :] - candidate[:, :-1, :]
     increment_norm = jnp.sqrt(jnp.sum(jnp.square(raw_increments), axis=-1, keepdims=True) + 1.0e-12)
-    scale = jnp.minimum(1.0, energy_config.max_step_length_m / increment_norm)
+    segment_caps = max_segment_length_per_path(
+        metric_tensors,
+        raw_actions.shape[0],
+        raw_actions.shape[1] - 1,
+        raw_metric.dtype,
+        energy_config,
+    )
+    scale = jnp.minimum(1.0, segment_caps[:, None, None] / increment_norm)
     increments = raw_increments * scale
     future_xy = jnp.cumsum(increments, axis=1)
     origin = jnp.zeros((raw_actions.shape[0], 1, 2), dtype=future_xy.dtype)
@@ -252,25 +298,28 @@ def compute_obstacle_energy(
     esdf_active = esdf_weight > 0.0
     esdf_weight_count = jnp.maximum(jnp.sum(esdf_weight, axis=-1), 1.0)
 
+    footprint_clearance = esdf_for_energy - robot_radius[:, None]
     learning_weight = esdf_weight
     learning_weight_count = esdf_weight_count
     if energy_config.esdf_learning_cutoff_m is not None:
         cutoff = energy_config.esdf_learning_cutoff_m
         if not 0.0 < cutoff < float("inf"):
             raise ValueError("ESDF learning cutoff must be finite and positive, or None.")
-        ignored = esdf_sample_ok & (pred_esdf >= cutoff)
+        valid_footprint_clearance = pred_esdf - robot_radius[:, None]
+        ignored = esdf_sample_ok & (valid_footprint_clearance >= cutoff)
         learning_weight = jnp.where(ignored, 0.0, esdf_weight)
         learning_weight_count = jnp.maximum(jnp.sum(learning_weight, axis=-1), 1.0)
 
-    collision_per_point = jnp.square(jnp.maximum(0.0, safe_radius[:, None] - esdf_for_energy))
+    # Physical collision is footprint_clearance < 0 and remains diagnostic.
+    collision_per_point = jnp.square(jnp.maximum(0.0, -footprint_clearance))
     collision_energy = jnp.sum(learning_weight * collision_per_point, axis=-1) / learning_weight_count
 
-    # Maximize raw ESDF only until the configured cap. Do not clamp negative
-    # ESDF to zero: clearance is the sole obstacle-training term and must keep
-    # a recovery gradient for occupied and unsupported samples.
-    clearance_per_point = -jnp.minimum(
-        esdf_for_energy, energy_config.clearance_cap_m
+    # Optimize one interpretable target in footprint-clearance space. The
+    # squared hinge is zero only after the requested safety margin is met.
+    clearance_violation = jnp.maximum(
+        0.0, energy_config.safety_margin_m - footprint_clearance
     )
+    clearance_per_point = jnp.square(clearance_violation)
     clearance_energy = jnp.sum(learning_weight * clearance_per_point, axis=-1) / learning_weight_count
 
     goal_xy = jnp.asarray(metric_tensors["goal_xy"], dtype=xy_with_start.dtype)
@@ -283,10 +332,14 @@ def compute_obstacle_energy(
     )
     final_goal_error = _safe_norm(pred_xy[:, -1, :] - clamped_goal_xy, axis=-1)
     clamped_goal_distance = _safe_norm(clamped_goal_xy, axis=-1)
-    motion_budget = jnp.asarray(
-        num_segments * energy_config.max_step_length_m,
-        dtype=xy_with_start.dtype,
+    segment_caps = max_segment_length_per_path(
+        metric_tensors,
+        batch_size,
+        num_segments,
+        xy_with_start.dtype,
+        energy_config,
     )
+    motion_budget = jnp.asarray(num_segments, dtype=xy_with_start.dtype) * segment_caps
     required_progress = jnp.minimum(
         clamped_goal_distance,
         energy_config.required_progress_fraction * motion_budget,
@@ -297,11 +350,34 @@ def compute_obstacle_energy(
         required_progress,
         jnp.asarray(energy_config.min_step_scale_m, dtype=xy_with_start.dtype),
     )
-    # "goal_energy" is deliberately horizon-aware: zero means the short chunk
-    # made the requested local progress, not that it teleported to a far goal.
-    goal_energy = jnp.square(progress_shortfall / required_progress_scale)
-
     distance_to_goal = _safe_norm(xy_with_start - clamped_goal_xy[:, None, :], axis=-1)
+    achieved_prefix_progress = clamped_goal_distance[:, None] - distance_to_goal[:, 1:]
+    prefix_fraction = jnp.linspace(
+        1.0 / num_segments,
+        1.0,
+        num_segments,
+        dtype=xy_with_start.dtype,
+    )
+    required_prefix_progress = required_progress[:, None] * prefix_fraction[None, :]
+    prefix_shortfall = jnp.maximum(
+        required_prefix_progress - achieved_prefix_progress,
+        0.0,
+    )
+    # The fixed origin has implicit weight zero. Future waypoint i has weight
+    # i / num_segments, increasing linearly to one at the endpoint.
+    prefix_weights = prefix_fraction
+    normalized_prefix_shortfall = (
+        prefix_shortfall / required_progress_scale[:, None]
+    )
+    # Use the literal linear coefficients as a weighted sum. For the fixed
+    # 15-segment horizon, goal_weight=5 gives approximately the same aggregate
+    # forward gradient as the old endpoint-only weight of 30 while distributing
+    # that signal across the path.
+    goal_energy = jnp.sum(
+        prefix_weights[None, :] * jnp.square(normalized_prefix_shortfall),
+        axis=-1,
+    )
+
     distance_increase = distance_to_goal[:, 1:] - distance_to_goal[:, :-1]
     progress_energy = jnp.mean(
         jnp.square(jnp.maximum(0.0, distance_increase)), axis=-1
@@ -386,6 +462,7 @@ def compute_obstacle_energy(
         "weighted_smoothness_energy": energy_config.smoothness_weight * jnp.mean(smoothness_energy),
         "collision_rate": jnp.mean(collision_indicator),
         "unsafe_rate": jnp.mean(unsafe_indicator),
+        "clearance_violation_rate": jnp.mean(unsafe_indicator),
         "invalid_esdf_rate": jnp.mean(invalid_mask.astype(jnp.float32)),
         "esdf_valid_rate": valid_rate,
         "all_invalid_traj_rate": all_invalid_rate,
@@ -405,14 +482,20 @@ def compute_obstacle_energy(
         "required_progress_m": jnp.mean(required_progress),
         "achieved_progress_m": jnp.mean(achieved_progress),
         "progress_shortfall_m": jnp.mean(progress_shortfall),
+        "prefix_progress_shortfall_m": jnp.sum(
+            prefix_weights[None, :] * prefix_shortfall, axis=-1
+        ).mean()
+        / jnp.maximum(jnp.sum(prefix_weights), 1.0e-6),
         "achieved_required_progress_ratio": jnp.mean(achieved_progress / required_progress_scale),
         "path_length_m": jnp.mean(jnp.sum(segment_lengths, axis=-1)),
         "endpoint_radius_m": jnp.mean(_safe_norm(pred_xy[:, -1, :], axis=-1)),
         "max_step_length_m": energy_config.max_step_length_m,
+        "mean_segment_cap_m": jnp.mean(segment_caps),
+        "max_segment_cap_m": jnp.max(segment_caps),
         "mean_segment_length_m": jnp.mean(segment_lengths),
         "max_segment_length_m": jnp.max(segment_lengths),
         "step_violation_rate": jnp.mean(
-            (segment_lengths > energy_config.max_step_length_m + 1.0e-5).astype(jnp.float32)
+            (segment_lengths > segment_caps[:, None] + 1.0e-5).astype(jnp.float32)
         ),
         "goal_clamp_distance_m": jnp.mean(goal_clamp_distance),
         "goal_was_clamped_rate": jnp.mean((goal_clamp_distance > 1.0e-6).astype(jnp.float32)),

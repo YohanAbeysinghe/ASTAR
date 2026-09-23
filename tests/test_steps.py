@@ -154,7 +154,9 @@ def test_new_defaults_and_resume_signature_include_schedule(monkeypatch):
     assert args.aggregation_step_size == 1.0
     assert args.collision_weight == 0.0
     assert args.clearance_weight == 1.0
-    assert args.clearance_cap_m == 0.2
+    assert args.clearance_cap_m == 0.25
+    assert args.goal_weight == 5.0
+    assert args.path_detour_factor == 1.25
     before = trainer._resume_signature(args)
     args.aggregation_step_size_start = 0.2
     assert trainer._resume_signature(args) != before

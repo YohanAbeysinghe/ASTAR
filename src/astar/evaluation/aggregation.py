@@ -480,6 +480,7 @@ def build_energy_config(values: Mapping[str, Any]) -> ObstacleEnergyConfig:
         min_step_scale_m=float(values["min_step_scale_m"]),
         segment_samples=int(values["segment_samples"]),
         max_step_length_m=float(values["max_step_length_m"]),
+        path_detour_factor=float(values.get("path_detour_factor", 1.25)),
         max_increment_correction_m=float(values["max_increment_correction_m"]),
         prior_goal_heading_fraction=float(values["prior_goal_heading_fraction"]),
         prior_goal_heading_limit_rad=float(values["prior_goal_heading_limit_rad"]),

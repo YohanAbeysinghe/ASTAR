@@ -126,7 +126,7 @@ TRAIN_CONSOLE_KEYS = (
     "oracle_direction_rms",
     "grad_norm",
 )
-AGGREGATION_ALGORITHM_VERSION = 6
+AGGREGATION_ALGORITHM_VERSION = 7
 
 
 class OracleOnlyNavigationDataset(AstarNavigationDataset):
@@ -1405,6 +1405,9 @@ def _round_metrics(
         "rollout_acceptance_rate": rollout_summary["rollout_acceptance_rate"],
         "field_oracle_cosine": cosine_sum / cosine_count if cosine_count else None,
         "collision_rate": rollout_summary["collision_rate"],
+        "clearance_violation_rate": rollout_summary.get(
+            "unsafe_rate", rollout_summary["collision_rate"]
+        ),
         "invalid_esdf_rate": rollout_summary["invalid_esdf_rate"],
         "progress_ratio": rollout_summary["achieved_required_progress_ratio"],
         "achieved_progress_m": rollout_summary["achieved_progress_m"],
@@ -1426,7 +1429,7 @@ def _convergence_config_from_args(args: argparse.Namespace) -> ConvergenceConfig
         p95_path_change_m=args.convergence_p95_path_change_m,
         relative_energy_change=args.convergence_relative_energy_change,
         oracle_grad_rms=args.convergence_oracle_grad_rms,
-        max_collision_rate=args.convergence_max_collision_rate,
+        max_clearance_violation_rate=args.convergence_max_clearance_violation_rate,
         min_progress_ratio=args.convergence_min_progress_ratio,
     )
 
@@ -1599,8 +1602,12 @@ def _validate_args(
     if energy_config.esdf_learning_cutoff_m is not None and not (
         math.isfinite(energy_config.esdf_learning_cutoff_m)
         and energy_config.esdf_learning_cutoff_m > 0.0
+        and energy_config.esdf_learning_cutoff_m >= energy_config.safety_margin_m
     ):
-        raise ValueError("--esdf-learning-cutoff-m must be finite and positive.")
+        raise ValueError(
+            "--esdf-learning-cutoff-m is measured after subtracting robot radius "
+            "and must be at least --obstacle-safety-margin-m."
+        )
     if not 0.0 <= energy_config.esdf_ramp_start_m < energy_config.esdf_min_x_m:
         raise ValueError("Require 0 <= --esdf-ramp-start-m < --esdf-min-x-m.")
     if energy_config.segment_samples <= 0:
@@ -1609,6 +1616,10 @@ def _validate_args(
         raise ValueError("--min-step-scale-m must be positive.")
     if energy_config.max_step_length_m <= 0.0:
         raise ValueError("--max-step-length-m must be positive.")
+    if not math.isfinite(energy_config.path_detour_factor) or (
+        energy_config.path_detour_factor < 1.0
+    ):
+        raise ValueError("--path-detour-factor must be finite and at least 1.")
     if energy_config.max_increment_correction_m <= 0.0:
         raise ValueError("--max-increment-correction-m must be positive.")
     if not 0.0 <= energy_config.prior_goal_heading_fraction <= 1.0:
@@ -1693,6 +1704,7 @@ def main(args: argparse.Namespace) -> None:
         min_step_scale_m=args.min_step_scale_m,
         segment_samples=args.segment_samples,
         max_step_length_m=args.max_step_length_m,
+        path_detour_factor=args.path_detour_factor,
         max_increment_correction_m=args.max_increment_correction_m,
         prior_goal_heading_fraction=args.prior_goal_heading_fraction,
         prior_goal_heading_limit_rad=args.prior_goal_heading_limit_rad,
@@ -2157,13 +2169,14 @@ def main(args: argparse.Namespace) -> None:
         )
         logging.info(
             "Validation step %d (%d path adjustments): success=%.1f%% safe_success=%.1f%% progress=%.3f "
-            "collision=%.1f%% invalid=%.1f%% plateau_checks=%d/%d",
+            "collision=%.1f%% clearance_violation=%.1f%% invalid=%.1f%% plateau_checks=%d/%d",
             step,
             rollout_steps,
             100 * summary["success_rate"],
             100 * summary["safe_success_rate"],
             summary["progress_ratio"],
             100 * summary["collision_rate"],
+            100 * summary["clearance_violation_rate"],
             100 * summary["invalid_coverage_rate"],
             benefit_tracker.bad_rounds,
             benefit_tracker.patience,
@@ -2466,7 +2479,8 @@ def main(args: argparse.Namespace) -> None:
         global_step = int(jax.device_get(train_state.step))
         logging.info(
             "Finished aggregation round %d: energy %.4f -> %.4f, path change "
-            "median=%.4fm p95=%.4fm, grad_rms=%.6f, collision=%.2f%%, status=%s",
+            "median=%.4fm p95=%.4fm, grad_rms=%.6f, collision=%.2f%%, "
+            "clearance_violation=%.2f%%, status=%s",
             round_index,
             round_metrics["energy_before"],
             round_metrics["energy_after"],
@@ -2474,6 +2488,7 @@ def main(args: argparse.Namespace) -> None:
             round_metrics["path_change_p95"],
             round_metrics["oracle_grad_rms"],
             100.0 * round_metrics["collision_rate"],
+            100.0 * round_metrics["clearance_violation_rate"],
             convergence_status,
         )
         plateau, validation_payload = evaluate_current_model(track_benefit=True)
@@ -2681,7 +2696,15 @@ def parse_args() -> argparse.Namespace:
         "--convergence-oracle-grad-rms", type=float, default=1.0e-4
     )
     convergence.add_argument(
-        "--convergence-max-collision-rate", type=float, default=0.05
+        "--convergence-max-clearance-violation-rate",
+        "--convergence-max-collision-rate",
+        dest="convergence_max_clearance_violation_rate",
+        type=float,
+        default=0.05,
+        help=(
+            "Maximum fraction of paths below the requested footprint-clearance "
+            "margin. The old collision-rate spelling is a compatibility alias."
+        ),
     )
     convergence.add_argument(
         "--convergence-min-progress-ratio", type=float, default=0.9
@@ -2719,19 +2742,36 @@ def parse_args() -> argparse.Namespace:
         help="Deprecated compatibility option; collision is diagnostic only.",
     )
     energy.add_argument("--clearance-weight", type=float, default=1.0)
-    energy.add_argument("--goal-weight", type=float, default=30.0)
+    energy.add_argument("--goal-weight", type=float, default=5.0)
     energy.add_argument("--progress-weight", type=float, default=10.0)
     energy.add_argument("--early-heading-weight", type=float, default=0.25)
     energy.add_argument("--smoothness-weight", type=float, default=0.5)
     energy.add_argument("--obstacle-safety-margin-m", type=float, default=0.25)
-    energy.add_argument("--clearance-cap-m", type=float, default=0.2)
+    energy.add_argument(
+        "--clearance-cap-m",
+        type=float,
+        default=0.25,
+        help=(
+            "Deprecated saved-config field ignored by aggregation algorithm v7; "
+            "use --obstacle-safety-margin-m."
+        ),
+    )
     energy.add_argument("--esdf-learning-cutoff-m", type=float, default=None,
-                        help="Ignore obstacle loss/gradient for valid raw ESDF >= this distance (meters); omitted disables it.")
+                        help="Optional cutoff in footprint-clearance meters after subtracting robot radius; must be at least the safety margin.")
     energy.add_argument("--esdf-ramp-start-m", type=float, default=0.5)
     energy.add_argument("--esdf-min-x-m", type=float, default=2.0)
     energy.add_argument("--min-step-scale-m", type=float, default=0.1)
     energy.add_argument("--segment-samples", type=int, default=6)
     energy.add_argument("--max-step-length-m", type=float, default=0.4)
+    energy.add_argument(
+        "--path-detour-factor",
+        type=float,
+        default=1.25,
+        help=(
+            "Slack over straight-line goal distance used by the per-path segment "
+            "cap; max-step-length-m remains the physical hard cap."
+        ),
+    )
     energy.add_argument("--required-progress-fraction", type=float, default=0.65)
     energy.add_argument("--energy-temperature", type=float, default=1.0)
     energy.add_argument("--train-particles", type=int, default=2)

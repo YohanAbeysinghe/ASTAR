@@ -299,7 +299,9 @@ def test_wandb_round_allowlist_has_active_components_without_duplicate_counters(
         {"oracle_acceptance_rate": 1.0}, np.asarray([0.1, 0.2]), [rollout_info]
     )
     payload = monitoring.round_wandb_metrics(info, config)
-    assert len(payload) == 15
+    assert len(payload) == 17
+    assert payload["aggregation/collision_rate"] == pytest.approx(0.5)
+    assert payload["aggregation/clearance_violation_rate"] == pytest.approx(0.5)
     assert "energy/clearance" not in payload
     for term, name in monitoring.ENERGY_EQUATION_NAMES.items():
         assert payload[f"energy/{name}"] == pytest.approx(raw_terms[term])

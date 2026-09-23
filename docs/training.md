@@ -10,9 +10,13 @@ The checked-in launchers use a fixed 1,024-example multimodal condition pool:
 1/6 sampled goals and 5/6 object goals, with independent text, image, and
 waypoint masks for object goals. Startup fails if any required modality is
 absent. They force aggregation toward 64 rounds while retaining convergence
-stopping, and ignore valid-map obstacle samples at or above 0.2 m for learning.
-The adapter-only optimization, 16-waypoint output, and energy-term weights are
-unchanged.
+stopping. The obstacle objective uses a single 0.25 m clearance target outside
+the unchanged robot radius; physical collision at footprint clearance below
+zero remains a diagnostic. Goal progress is supervised at every waypoint with
+linear weights from zero at the fixed origin to one at the endpoint. For the
+16-waypoint path, segment length is capped by straight-line goal distance / 15
+with a 1.25x detour allowance and the 1.0 m physical cap. The default goal
+weight is 5 for this denser signal.
 
 For a single node with four RTX A6000 GPUs, use
 `slurm/train_1node_4gpu_a6000.sbatch`. It keeps the global batch at 16 and uses

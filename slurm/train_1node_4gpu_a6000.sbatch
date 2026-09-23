@@ -79,18 +79,17 @@ srun --kill-on-bad-exit=1 --gpu-bind=none \
   --object-image-goal-prob 0.3333333333333333 \
   --object-waypoint-goal-prob 0.16666666666666666 \
   --require-all-goal-modalities --segment-samples 15 \
-  --collision-weight 0 --clearance-weight 1 --clearance-cap-m 0.2 \
-  --esdf-learning-cutoff-m 0.2 \
-  --goal-weight 30 --progress-weight 10 \
+  --collision-weight 0 --clearance-weight 1 \
+  --goal-weight 5 --progress-weight 10 \
   --early-heading-weight 0.25 --smoothness-weight 0.5 \
-  --max-step-length-m 1.0 --required-progress-fraction 0.9 \
+  --max-step-length-m 1.0 --path-detour-factor 1.25 --required-progress-fraction 0.9 \
   --obstacle-safety-margin-m 0.25 \
   --warmup-steps 1000 --peak-lr 1e-4 --decay-steps 30000 --decay-lr 1e-5 \
   --clip-gradient-norm 1.0 \
   --convergence-min-rounds 3 --convergence-patience 2 \
   --convergence-median-path-change-m 0.01 --convergence-p95-path-change-m 0.03 \
   --convergence-relative-energy-change 1e-3 --convergence-oracle-grad-rms 1e-4 \
-  --convergence-max-collision-rate 0.05 --convergence-min-progress-ratio 0.9 \
+  --convergence-max-clearance-violation-rate 0.05 --convergence-min-progress-ratio 0.9 \
   --save-interval 5000 --trainable-snapshot-interval 0 --log-interval 100 \
   --aggregation-plot-interval 1 --train-plot-num-images 12 \
   "${WANDB_ARGS[@]}" "$@"

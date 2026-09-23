@@ -42,6 +42,7 @@ VALIDATION_METRICS = (
     "safe_success_rate",
     "progress_ratio",
     "collision_rate",
+    "clearance_violation_rate",
     "invalid_coverage_rate",
     "goal_retreat_segment_rate",
 )
@@ -84,6 +85,10 @@ def round_wandb_metrics(round_metrics, energy_config):
     payload = {
         "aggregation/field_oracle_cosine": round_metrics["field_oracle_cosine"],
         "aggregation/learned_step_acceptance": round_metrics["rollout_acceptance_rate"],
+        "aggregation/collision_rate": round_metrics["collision_rate"],
+        "aggregation/clearance_violation_rate": round_metrics[
+            "clearance_violation_rate"
+        ],
         "energy/total": round_metrics["energy_after"],
         "energy/E": round_metrics["energy_after"],
     }
@@ -254,6 +259,7 @@ def score_validation_paths(
             "progress_ratio": progress,
             "bounded_progress_ratio": jnp.clip(progress, -1.0, 1.0),
             "collision_rate": info["collision_rate"],
+            "clearance_violation_rate": info["unsafe_rate"],
             "invalid_coverage_rate": info["invalid_esdf_rate"],
             "goal_retreat_segment_rate": jnp.mean((retreat > 1e-6).astype(jnp.float32)),
             "goal_retreat_m": jnp.sum(retreat),

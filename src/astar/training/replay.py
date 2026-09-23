@@ -51,7 +51,7 @@ class ConvergenceConfig:
     p95_path_change_m: float = 0.03
     relative_energy_change: float = 1.0e-3
     oracle_grad_rms: float = 1.0e-4
-    max_collision_rate: float = 0.05
+    max_clearance_violation_rate: float = 0.05
     min_progress_ratio: float = 0.9
 
     def __post_init__(self) -> None:
@@ -64,13 +64,13 @@ class ConvergenceConfig:
             "p95_path_change_m",
             "relative_energy_change",
             "oracle_grad_rms",
-            "max_collision_rate",
+            "max_clearance_violation_rate",
             "min_progress_ratio",
         ):
             if getattr(self, name) < 0.0:
                 raise ValueError(f"{name} must be non-negative.")
-        if self.max_collision_rate > 1.0:
-            raise ValueError("max_collision_rate must be at most 1.")
+        if self.max_clearance_violation_rate > 1.0:
+            raise ValueError("max_clearance_violation_rate must be at most 1.")
         if self.min_progress_ratio > 1.0:
             raise ValueError("min_progress_ratio must be at most 1.")
 
@@ -97,7 +97,8 @@ class ConvergenceTracker:
         )
         oracle_stationary = metrics["oracle_grad_rms"] <= self.config.oracle_grad_rms
         task_satisfactory = (
-            metrics["collision_rate"] <= self.config.max_collision_rate
+            metrics.get("clearance_violation_rate", metrics["collision_rate"])
+            <= self.config.max_clearance_violation_rate
             and metrics.get("invalid_esdf_rate", 0.0) <= 1.0e-6
             and metrics["progress_ratio"] >= self.config.min_progress_ratio
         )
@@ -156,6 +157,9 @@ class BenefitTracker:
             # Bound the influence of pathological short-goal overshoots.
             "progress_ratio": metrics["bounded_progress_ratio"],
             "collision_rate": -metrics["collision_rate"],
+            "clearance_violation_rate": -metrics.get(
+                "clearance_violation_rate", metrics["collision_rate"]
+            ),
             "invalid_coverage_rate": -metrics["invalid_coverage_rate"],
             "goal_retreat_segment_rate": -metrics["goal_retreat_segment_rate"],
         }

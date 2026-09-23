@@ -121,7 +121,7 @@ def test_convergence_rejects_zero_field_collapse_and_uses_patience() -> None:
             p95_path_change_m=0.03,
             relative_energy_change=1.0e-3,
             oracle_grad_rms=1.0e-4,
-            max_collision_rate=0.05,
+            max_clearance_violation_rate=0.05,
             min_progress_ratio=0.9,
         )
     )
@@ -131,6 +131,7 @@ def test_convergence_rejects_zero_field_collapse_and_uses_patience() -> None:
         "relative_energy_improvement": 0.0001,
         "oracle_grad_rms": 1.0e-5,
         "collision_rate": 0.0,
+        "clearance_violation_rate": 0.0,
         "progress_ratio": 1.0,
     }
     collapsed = stable | {"oracle_grad_rms": 0.2}
@@ -184,7 +185,10 @@ def test_completed_converged_replay_is_terminal() -> None:
 @pytest.mark.parametrize(
     "kwargs, message",
     [
-        ({"max_collision_rate": 1.01}, "max_collision_rate"),
+        (
+            {"max_clearance_violation_rate": 1.01},
+            "max_clearance_violation_rate",
+        ),
         ({"min_progress_ratio": 1.01}, "min_progress_ratio"),
     ],
 )

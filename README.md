@@ -25,9 +25,13 @@ For a fixed pool of observations and goals, ASTAR repeatedly:
 5. trains the pi0.5 field to imitate all retained refinements; and
 6. advances paths with the learned field before the next aggregation round.
 
-The current objective combines clearance, goal-reaching, progress, early
-heading, and smoothness terms. Collision measurements remain available for
-safety monitoring.
+The current objective combines footprint clearance, all-waypoint goal
+progress, retreat prevention, early heading, and smoothness terms. It targets
+0.25 m beyond the unchanged robot radius, while physical collision
+(`footprint clearance < 0`) remains available as a separate safety diagnostic.
+Goal-progress weights rise linearly from zero at the fixed origin to one at the
+endpoint. Goal-aware segment caps use straight-line spacing with an explicit
+1.25x detour allowance, bounded by the physical step cap.
 
 ## Repository layout
 
