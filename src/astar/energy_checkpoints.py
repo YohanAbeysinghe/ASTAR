@@ -18,6 +18,9 @@ import openpi.training.utils as training_utils
 import orbax.checkpoint as ocp
 
 FULL_CHECKPOINT_MAX_TO_KEEP = 1
+# Preserve reproducible milestones while bounding the rolling checkpoints kept
+# between them. Orbax exempts steps divisible by this period from max_to_keep.
+FULL_CHECKPOINT_KEEP_PERIOD = 10_000
 _AUXILIARY_CHECKPOINT_PATTERN = re.compile(
     r"(?:aggregation_state_(\d+)\.npz|trainable_(\d+))"
 )
@@ -145,7 +148,7 @@ def initialize_bounded_checkpoint_dir(
         },
         options=ocp.CheckpointManagerOptions(
             max_to_keep=FULL_CHECKPOINT_MAX_TO_KEEP,
-            keep_period=None,
+            keep_period=FULL_CHECKPOINT_KEEP_PERIOD,
             keep_checkpoints_without_metrics=False,
             cleanup_tmp_directories=True,
             create=False,

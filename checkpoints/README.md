@@ -26,6 +26,7 @@ Training outputs are written under:
 checkpoints/astar_pi05_energy_aggregation/<experiment-name>/
 ```
 
-ASTAR retains one committed full checkpoint and its matching replay/archive
-state. A trainable-parameter-only export may also be written at the final
-step. The pi0.5 base checkpoint is immutable and never used as an output path.
+ASTAR retains the latest committed full checkpoint plus every 10,000-step
+milestone and their matching replay/archive states. A trainable-parameter-only
+export may also be written at the final step. The pi0.5 base checkpoint is
+immutable and never used as an output path.

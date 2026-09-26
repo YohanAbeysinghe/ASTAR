@@ -42,6 +42,9 @@ def test_secondary_waits_for_directory_before_opening_manager(tmp_path, monkeypa
     sleep.assert_called_once()
     assert bool(gather.call_args.args[0])
     manager.assert_called_once()
+    options = manager.call_args.kwargs["options"]
+    assert options.max_to_keep == 1
+    assert options.keep_period == 10_000
 
 
 def test_visibility_wait_has_a_deadline(tmp_path, monkeypatch):
