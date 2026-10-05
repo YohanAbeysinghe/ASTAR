@@ -239,3 +239,4 @@ __marimo__/
 .streamlit/secrets.toml
 tests/wandb images/
 eval/
+slurm/continue_full_partition_depth14_a6000.sbatch
