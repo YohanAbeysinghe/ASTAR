@@ -240,3 +240,4 @@ __marimo__/
 tests/wandb images/
 eval/
 slurm/continue_full_partition_depth14_a6000.sbatch
+deployment/
