@@ -9,12 +9,15 @@ os.environ.setdefault('MPLCONFIGDIR', str(Path(tempfile.gettempdir()) / 'gear_sp
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as pe
+from matplotlib.patches import Rectangle
 from PIL import Image
 
 HERE = Path(__file__).resolve().parent
 SOURCE = HERE.parent
 DATA = json.loads((SOURCE / 'evidence.json').read_text())
 STYLE = json.loads((SOURCE / 'style.json').read_text())
+GOALS = json.loads((HERE / 'goal_annotations.json').read_text())['views']
 plt.rcParams.update({'font.family': STYLE['font_family'], 'svg.fonttype': 'none',
                      'pdf.fonttype': 42, 'svg.hashsalt': 'gear-compact-result-proposal',
                      'text.color': '#1A1A1A'})
@@ -31,6 +34,22 @@ def main():
         with Image.open(SOURCE / view['image']) as image:
             ax.imshow(image, aspect='auto')
         ax.set_axis_off()
+        goal = GOALS[i]
+        assert goal['image'] == view['image']
+        assert hashlib.sha256((SOURCE / view['image']).read_bytes()).hexdigest() == goal['image_sha256']
+        gx, gy, gw, gh = goal['target_box_xywh_top_left']
+        outline = Rectangle((gx, 1-gy-gh), gw, gh, transform=ax.transAxes,
+                            fill=False, edgecolor='#FFDF35', linewidth=.8)
+        outline.set_path_effects([pe.Stroke(linewidth=1.4, foreground='#242424'), pe.Normal()])
+        ax.add_patch(outline)
+        label_x, label_y = goal['label_xy_axes']
+        edge_x = gx if label_x < gx else gx+gw
+        ax.annotate('Goal', xy=(edge_x, 1-gy-gh*.35), xycoords='axes fraction',
+                    xytext=(label_x, label_y), textcoords='axes fraction',
+                    fontsize=6.5, ha='center', va='center', color='#1A1A1A',
+                    bbox=dict(boxstyle='round,pad=.13', fc='#FFDF35', ec='#242424', lw=.4),
+                    arrowprops=dict(arrowstyle='-', color='#FFDF35', lw=.8,
+                                    path_effects=[pe.Stroke(linewidth=1.4, foreground='#242424'), pe.Normal()]))
         fig.text(x+w/2, .080, f"({chr(97+i)}) {view['name']}", fontsize=7, ha='center')
     for ext in ['pdf', 'svg', 'png']:
         path = HERE / f'compact_proposal.{ext}'
@@ -54,6 +73,7 @@ def main():
         'compact_proposal': {'width_in': width, 'height_in': height, 'area_sq_in': width*height},
         'qualitative_only': True,
         'evaluation_values_in_proposal': 0,
+        'goal_annotations': 3,
         'evaluation_location': 'Existing paper table tab:isaac_sim',
         'comparison_excludes_external_captions_and_float_spacing': True,
         'pipeline_image_height_in': text_width*458.92/504.57,

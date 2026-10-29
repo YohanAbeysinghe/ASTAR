@@ -15,6 +15,7 @@
   },
   "qualitative_only": true,
   "evaluation_values_in_proposal": 0,
+  "goal_annotations": 3,
   "evaluation_location": "Existing paper table tab:isaac_sim",
   "comparison_excludes_external_captions_and_float_spacing": true,
   "pipeline_image_height_in": 6.366688467407892,

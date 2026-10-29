@@ -3,6 +3,9 @@
 For the main-paper layout, the selected proposal is now an
 [images-only scene strip](space_review/compact_proposal.pdf). Evaluation values
 stay in the paper's existing table; the figure does not repeat them.
+Yellow outlines and “Goal” callouts identify the target people in these
+illustrative recordings. The recorded instructions, source hashes, and manual
+image coordinates are saved in `space_review/goal_annotations.json`.
 
 The current [PDF](isaacsim_results.pdf), [PNG](isaacsim_results.png), and
 [editable SVG](isaacsim_results.svg) visualize **all 36 simulation values** in
@@ -47,7 +50,8 @@ the new GEAR-Nav count and per-trial logs have not been supplied.
 The three photos are unchanged recorded third-person JPEGs from the earlier
 local diagnostic: hospital lobby, hospital corridor, and warehouse. They are
 explicitly **illustrative views from separate runs**, not evidence that the
-new metrics use those exact scenes or goals. The old goal markers, trajectory
+new metrics use those exact scenes or goals. In the full evaluation chart,
+the old goal markers, trajectory
 plots, contact event labels, trial counts, and Wilson intervals are excluded.
 No imagery or trajectories were generated or retouched.
 

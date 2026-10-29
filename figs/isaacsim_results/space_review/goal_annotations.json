@@ -1,0 +1,57 @@
+{
+  "method": "Manual visual annotation of the person matching the recorded instruction; boxes are normalized image coordinates, not calibrated world projections.",
+  "scope": "Goals of the illustrative recorded runs; not linked to the aggregate evaluation table.",
+  "views": [
+    {
+      "image": "assets/scene_1_third_person.jpg",
+      "image_sha256": "c2c9310ba321f8032ed10e4a5ea60c73ea39f58dc9723159dee948f964580a17",
+      "source_prediction": "SimResults/astar_57500_oracle_goal_100/random_video_reruns/results/scenario1/predictions/episode_far20_s1_21/prediction_00008.json",
+      "prediction_sha256": "14cae507ff165d92c55796e4378c64ae2ce594d6349dbf0fa78e979ad4bac3d7",
+      "instruction": "go to person described by the person wearing a long white coat and light trousers standing farther away",
+      "target_box_xywh_top_left": [
+        0.49,
+        0.05,
+        0.042,
+        0.29
+      ],
+      "label_xy_axes": [
+        0.29,
+        0.85
+      ]
+    },
+    {
+      "image": "assets/scene_2_third_person.jpg",
+      "image_sha256": "2ac028ab690c7a7d98e92f1499e3657f8e25963daa85fb7ebc507dab86801db2",
+      "source_prediction": "SimResults/astar_57500_oracle_goal_100/random_video_reruns/results/scenario2/predictions/episode_far20_s2_01/prediction_00016.json",
+      "prediction_sha256": "916484751e167028b44b44f9ce2a4277e4ff663866a8839ae0ae0837c7a3b2c1",
+      "instruction": "go to person described by the bald man wearing a long white coat and gray trousers",
+      "target_box_xywh_top_left": [
+        0.475,
+        0.013,
+        0.046,
+        0.345
+      ],
+      "label_xy_axes": [
+        0.7,
+        0.83
+      ]
+    },
+    {
+      "image": "assets/scene_3_third_person.jpg",
+      "image_sha256": "4f553e1bf6e20382b092f0b3f6a80320827a84f264b24c99890036db1c340144",
+      "source_prediction": "SimResults/astar_57500_oracle_goal_100/random_video_reruns/results/scenario3/predictions/episode_warehouse50_s3_12/prediction_00008.json",
+      "prediction_sha256": "11fe2e64234012104b97c0ecc9cc990da410325959d4be9d0964404d4e2b8bc8",
+      "instruction": "go to person described by the person wearing a blue shirt and dark trousers",
+      "target_box_xywh_top_left": [
+        0.599,
+        0.045,
+        0.044,
+        0.315
+      ],
+      "label_xy_axes": [
+        0.38,
+        0.84
+      ]
+    }
+  ]
+}
