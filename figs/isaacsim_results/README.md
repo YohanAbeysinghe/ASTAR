@@ -1,5 +1,9 @@
 # Isaac Sim evaluation figure
 
+For the main-paper layout, the selected proposal is now an
+[images-only scene strip](space_review/compact_proposal.pdf). Evaluation values
+stay in the paper's existing table; the figure does not repeat them.
+
 The current [PDF](isaacsim_results.pdf), [PNG](isaacsim_results.png), and
 [editable SVG](isaacsim_results.svg) visualize **all 36 simulation values** in
 the paper's updated `tab:isaac_sim`. GEAR-Nav is orange; OmniVLA, TIC-VLA, and

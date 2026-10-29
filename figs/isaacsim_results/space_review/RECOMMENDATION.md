@@ -1,10 +1,9 @@
 # Space recommendation for the current paper
 
-**Use one single-column simulation block containing a shallow three-image
-strip and the complete comparison table. Replace the existing simulation
-table with that block if the images are retained. Put the nine-chart version
-in the supplement or presentation.** For the strictest space budget, retain
-the current table alone and put all simulation images in the supplement.
+**Keep the existing evaluation table in the paper. The figure should contain
+only three scene images and short labels.** The revised mockup is a shallow,
+single-column qualitative strip with no evaluation numbers, charts, or extra
+table. The nine-chart version can be used in the supplement or presentation.
 
 [Compact layout proposal](compact_proposal.pdf) · [PNG](compact_proposal.png)
 · [editable SVG](compact_proposal.svg)
@@ -23,25 +22,22 @@ will fit without further editing.
 | Visual | Width in paper | Image height, excluding caption |
 | --- | ---: | ---: |
 | Current nine-chart simulation figure, if added full width | 7.00 in | 5.31 in |
-| Proposed compact simulation block | 3.40 in | 2.45 in |
+| Proposed qualitative scene strip | 3.40 in | 0.85 in |
 | Current training pipeline | 7.00 in | 6.37 in |
 | Current correction-model figure | 3.40 in | 4.96 in |
 | Current teaser | 7.00 in | 3.09 in |
 | Current real-world figure | 3.40 in | 1.97 in |
 
-The compact proposal uses about **78% less figure area** than the full-width
-nine-chart version. This comparison excludes external captions and float
-spacing. It is not a claim that the proposal saves 78% versus the existing
-table: adding the scene strip to that table increases its height modestly.
+The scene strip adds only **0.85 inches of single-column image height**, before
+an external caption and float spacing. The existing table continues to carry
+all numerical comparisons. The earlier 2.45-inch image-plus-table mockup was
+replaced at the user's request to avoid repeating evaluations in the figure.
 
 ## Recommended use of the available space
 
-1. **Simulation: one compact block.** Preserve all 36 numeric entries and the
-   three scenarios. Use the existing method names and a subtle orange highlight
-   for GEAR-Nav. Main numeric labels in the mockup are 7.8 pt at native column
-   width. Do not retain a second table with the same values. Simply reducing
-   the nine-chart image to one column would make its numeric labels about
-   3.4 pt, which is not a useful print layout.
+1. **Simulation: images in the figure, numbers in the existing table.** Use
+   three equal-sized recorded views with 7 pt environment labels. The figure
+   provides scene context; Table I already contains all 36 evaluation values.
 2. **Real-world: keep the current qualitative figure and result table.** Its
    image is already compact. Add the measured GEAR-Nav row when available;
    avoid another chart repeating those same values.
@@ -69,9 +65,9 @@ NaVILA's high clearance accompanies zero success, illustrating why clearance
 alone is not a complete navigation result.
 
 The new GEAR-Nav trial count and episode logs remain unspecified, and the
-paper flags protocol matching for verification. The mockup contains aggregate
-values only. Its existing hospital/warehouse photos remain explicitly
-illustrative separate recordings. Matched evaluation frames would be preferable
+paper flags protocol matching for verification. The mockup contains no
+evaluation values. Its hospital/warehouse photos remain illustrative separate
+recordings, as documented in `scene_caption.tex`. Matched evaluation frames would be preferable
 for a final main-paper scene strip; if they are unavailable, the table-only
 option is the most efficient and least ambiguous choice.
 

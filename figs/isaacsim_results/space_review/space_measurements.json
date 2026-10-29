@@ -10,10 +10,12 @@
   },
   "compact_proposal": {
     "width_in": 3.4000015220700153,
-    "height_in": 2.45,
-    "area_sq_in": 8.330003729071539
+    "height_in": 0.85,
+    "area_sq_in": 2.890001293759513
   },
-  "figure_area_reduction_percent": 77.57445804592116,
+  "qualitative_only": true,
+  "evaluation_values_in_proposal": 0,
+  "evaluation_location": "Existing paper table tab:isaac_sim",
   "comparison_excludes_external_captions_and_float_spacing": true,
   "pipeline_image_height_in": 6.366688467407892,
   "model_image_height_in": 4.9640300000124356,
