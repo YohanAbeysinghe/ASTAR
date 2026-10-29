@@ -3,6 +3,12 @@
   "ink": "#1A1A1A",
   "muted": "#555555",
   "path": "#F39A18",
+  "models": {
+    "GEAR-Nav": "#F39A18",
+    "OmniVLA": "#4385ED",
+    "TIC-VLA": "#ED28DB",
+    "NaVILA": "#9424F5"
+  },
   "goal": "#FFC52F",
   "contact": "#BA3B46",
   "panel_fill": "#E6EFFD",

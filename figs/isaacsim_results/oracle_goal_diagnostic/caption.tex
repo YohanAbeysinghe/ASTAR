@@ -1,0 +1,16 @@
+\textbf{Isaac Sim evaluation with oracle goals.}
+GEAR-Nav is evaluated over 50 pedestrian timing variants in each of three
+fixed scenes (150 metric trials). Third-person images show separate
+collision-free success reruns and are excluded from the metric denominator.
+The middle row plots all recorded robot trajectories in a fixed local frame
+for each scene, with a shared metric scale. Bold orange highlights one metric
+trial; pale orange shows the remaining trials. Red identifies the trial with
+physical contact; its cross marks the last recorded pose, not the location of
+contact. Stars and shaded disks denote the goal and its 1.5\,m success radius.
+The lower row reports success and actual-contact counts with nominal 95\%
+Wilson intervals; each dot represents one metric trial. Trials vary
+pedestrian timing at fixed geometry, and intervals are conditional on this
+protocol. The policy receives exact simulator goal coordinates transformed
+into its local frame, so these results are an oracle-goal diagnostic rather
+than a language-only evaluation. They do not establish statistical
+significance against another method.

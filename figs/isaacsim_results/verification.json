@@ -1,24 +1,41 @@
 {
-  "metric_trials": 150,
-  "trajectory_count": 150,
-  "successes": 149,
-  "contact_trials": 1,
-  "realworld_pdf_sha256_unchanged": true,
-  "all_trajectory_samples_in_plot_limits": true,
+  "numeric_values": 36,
+  "baseline_values_crosschecked_to_vega": 27,
+  "gear_values": [
+    [
+      0.92,
+      0.06,
+      0.78
+    ],
+    [
+      0.84,
+      0.1,
+      0.46
+    ],
+    [
+      0.86,
+      0.12,
+      0.71
+    ]
+  ],
+  "svg_metric_groups": 36,
+  "embedded_images": 3,
+  "old_diagnostic_paths_and_statistics_excluded": true,
+  "paper_files_unchanged": true,
+  "gear_trial_count_not_inferred": true,
   "outputs": {
-    "isaacsim_results.svg": "d48eccaf7976e1c656c17a105e9bf5adba1367dde6fbe7ea6ca2b6696e5aba0e",
-    "isaacsim_results.pdf": "c27d063cc189853d88c4e3ca29ae1ce0a21e2c5f45f66ae5bcfddc5245e5ac26",
-    "isaacsim_results.png": "0ed7de150dd6897e703d9303562a37521336ddd6eb15c03f447bc856900ff910",
-    "isaacsim_scene_strip.svg": "49814554c5c3a1917b05d2ac3fcac094f8ea4012e484285746473dc2f8e7a395",
-    "isaacsim_scene_strip.pdf": "95d690f481c36acc0c7867f302311b806a43869992faa5423f595743cf05bc93",
-    "isaacsim_scene_strip.png": "498fbf6df50eedc3e16afd6b57b753f3ef9a57dc9f84f8f4f0bf94f9de55ed22"
+    "isaacsim_results.svg": "b03cd5bad9be7ace415f1ba78d8aa8a3316b85e729d3b33dee1f3c7e9d919ebe",
+    "isaacsim_results.pdf": "9f7e6a672e088266539ed0fcb79a85421dda683047aba51295902b3de767c7db",
+    "isaacsim_results.png": "a6562ed26f7466345f462263f495b9284b0ab6f074ba60cd90546bbbe9156a2f",
+    "isaacsim_scene_strip.svg": "d72693081e6bb905919af8b1b99e7b1b458ea278df5d17ba14702e1351abe89c",
+    "isaacsim_scene_strip.pdf": "2c9e30a12d1241614e8e96814e42736547aa9ba2f1db31d8d144184891e31785",
+    "isaacsim_scene_strip.png": "9bf8e2d3ab3e7e3f46f074c28962997969ca51b0c44ca47796167b7d6e1956b9"
   },
-  "wilson_intervals_crosschecked_with_scipy": true,
-  "unique_metric_trial_rows": 150,
-  "svg_measured_trajectory_groups": 150,
-  "svg_embedded_scene_images": 3,
+  "all_36_values_independently_matched_to_source_table": true,
+  "csv_rows": 12,
+  "photo_source_hashes_verified": true,
+  "python_unused_import_checks": "ruff --select F passed",
   "paper_proof_width_in": 7.12,
-  "paper_proof_compiled": true,
   "paper_proof_pages": 1,
-  "latex_overfull_underfull_warnings": false
+  "paper_proof_compiled_cleanly": true
 }

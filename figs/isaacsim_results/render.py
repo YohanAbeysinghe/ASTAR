@@ -1,201 +1,158 @@
-"""Render editable Isaac Sim figure masters from frozen measured evidence."""
+"""Render supplied Isaac Sim comparison values as an editable local figure."""
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import os
 from pathlib import Path
 import tempfile
+import xml.etree.ElementTree as ET
 
 os.environ.setdefault('MPLCONFIGDIR', str(Path(tempfile.gettempdir()) / 'gear_sim_matplotlib'))
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-from matplotlib.patches import Circle, FancyBboxPatch
-import matplotlib.patheffects as pe
-import numpy as np
 from PIL import Image
 
 HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[1]
 STYLE = json.loads((HERE / 'style.json').read_text())
 DATA = json.loads((HERE / 'evidence.json').read_text())
+MODELS = DATA['models']
+COLORS = {m: STYLE['models'][m] for m in MODELS}
 plt.rcParams.update({'font.family': STYLE['font_family'], 'svg.fonttype': 'none',
-                     'pdf.fonttype': 42, 'svg.hashsalt': 'gear-isaacsim-results',
+                     'pdf.fonttype': 42, 'svg.hashsalt': 'gear-isaacsim-comparison',
                      'text.color': STYLE['ink'], 'axes.labelcolor': STYLE['muted'],
                      'xtick.color': STYLE['muted'], 'ytick.color': STYLE['muted'],
                      'savefig.facecolor': 'white'})
-LEFT, STEP, WIDTH = .019, .328, .306
+LEFT, STEP, WIDTH = .105, .295, .270
+METRICS = [('success', 'Success ↑', '%', .451, 100, [0, 25, 50, 75, 100]),
+           ('collision', 'Collision ↓', '%', .277, 100, [0, 25, 50, 75, 100]),
+           ('clearance_m', 'Clearance ↑', 'm', .103, 1.6, [0, .4, .8, 1.2, 1.6])]
 
 
-def interval(values):
-    return f'{100*values[0]:.1f}–{100*values[1]:.1f}%'
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def export(fig, stem):
     for ext in ('svg', 'pdf', 'png'):
-        metadata = {'Creator': 'GEAR-Nav: recorded Isaac Sim poses and validated 150-trial results'}
+        metadata = {'Creator': 'GEAR-Nav: supplied simulation comparison values; illustrative recorded scene views'}
         if ext in ('svg', 'pdf'):
             metadata['Date' if ext == 'svg' else 'CreationDate'] = None
-        fig.savefig(HERE / f'{stem}.{ext}', dpi=220, metadata=metadata)
+        path = HERE / f'{stem}.{ext}'
+        fig.savefig(path, dpi=230, metadata=metadata)
         if ext == 'svg':
-            path = HERE / f'{stem}.{ext}'
             path.write_text('\n'.join(line.rstrip() for line in path.read_text().splitlines()) + '\n')
     plt.close(fig)
 
 
-def image_panel(fig, scene, x, bottom, height):
-    ax = fig.add_axes([x, bottom, WIDTH, height])
-    image = Image.open(HERE / scene['image'])
-    ax.imshow(image, extent=(0, 1, 1, 0), aspect='auto')
+def photo(fig, view, x, y, width, height):
+    ax = fig.add_axes([x, y, width, height])
+    with Image.open(HERE / view['image']) as image:
+        ax.imshow(image, aspect='auto')
     ax.set_axis_off()
-    # The manually located target marker is an annotation, never a projected pose.
-    u, v = scene['goal_marker_uv']
-    ax.scatter([u], [v], s=170, marker='*', c=STYLE['goal'],
-               edgecolors=STYLE['ink'], linewidths=.8, zorder=4)
-    ax.text(u+.045, v+.012, 'Goal', fontsize=15, color='white', va='center',
-            path_effects=[pe.withStroke(linewidth=2.5, foreground='#333333')])
-    ax.text(.035, .95, 'GEAR-Nav', va='bottom', fontsize=14, color='white',
-            bbox={'facecolor': '#222222', 'alpha': .72, 'edgecolor': 'none', 'pad': 3})
+    # Do not transfer old diagnostic goal annotations into the new evaluation.
     return ax
 
 
-def transform(scene, xy):
-    return (np.array(xy) - np.array(scene['start_world_xyz_m'][:2])) @ np.array(scene['world_to_start_frame']).T
-
-
-def trajectory_panel(fig, scene, x):
-    ax = fig.add_axes([x+.037, .326, .259, .209])
-    ax.set_facecolor('#FBFBFC')
+def bars(fig, scene, column, metric):
+    key, label, unit, bottom, max_value, ticks = metric
+    x = LEFT + column*STEP
+    ax = fig.add_axes([x, bottom, WIDTH, .113])
     ax.set_axisbelow(True)
-    ax.grid(color='#E4E6E9', lw=.6)
-    tracks = scene['tracks']
-    for track in tracks:
-        xy = transform(scene, track['world_xy_m'])
-        line, = ax.plot(xy[:, 0], xy[:, 1], color=STYLE['path'], alpha=.16, lw=1.0)
-        line.set_gid(f"{scene['scenario']}-{track['episode']}-recorded-poses")
-    selected = next(t for t in tracks if t['episode'] == scene['display_episode'])
-    xy = transform(scene, selected['world_xy_m'])
-    ax.plot(xy[:, 0], xy[:, 1], color=STYLE['path'], lw=2.5, zorder=4)
-    for track in tracks:
-        if track['contact']:
-            xy = transform(scene, track['world_xy_m'])
-            ax.plot(xy[:, 0], xy[:, 1], color=STYLE['contact'], lw=1.9, zorder=5)
-            ax.scatter(*xy[-1], marker='X', s=60, c=STYLE['contact'], edgecolors='white', linewidths=.6, zorder=8)
-            ax.annotate('Trial 24: contact', xy[-1], xytext=(13, 20), textcoords='offset points',
-                        fontsize=12, color=STYLE['contact'],
-                        arrowprops={'arrowstyle': '-', 'lw': .7, 'color': STYLE['contact']})
-    goal = transform(scene, [scene['goal_world_xyz_m'][:2]])[0]
-    region = Circle(goal, scene['goal_radius_m'], facecolor=STYLE['goal'],
-                    edgecolor='#B28A2B', alpha=.13, lw=1, linestyle='--', zorder=1)
-    ax.add_patch(region)
-    ax.scatter(*goal, marker='*', s=160, c=STYLE['goal'], edgecolors=STYLE['ink'], linewidths=.7, zorder=7)
-    ax.scatter([0], [0], marker='o', s=37, c=STYLE['ink'], edgecolors='white', linewidths=.7, zorder=7)
-    ax.set(xlim=(-1, 10.5), ylim=(-3.5, 3.5), xticks=[0, 2, 4, 6, 8, 10], yticks=[-2, 0, 2])
-    ax.set_aspect('equal', adjustable='box')
-    ax.set_xlabel('Forward (m)', fontsize=14, labelpad=2)
-    ax.set_ylabel('Left (m)', fontsize=14, labelpad=2)
-    ax.tick_params(labelsize=12, length=2.5, pad=2)
-    for spine in ax.spines.values():
-        spine.set_color('#D2D5DA')
+    ax.grid(axis='x', color='#E5E7EB', lw=.7)
+    values = [scene['metrics'][m][key] * (100 if unit == '%' else 1) for m in MODELS]
+    for j, (model, value) in enumerate(zip(MODELS, values)):
+        bar = ax.barh(j, value, height=.56, color=COLORS[model], alpha=1 if model == 'GEAR-Nav' else .82,
+                      edgecolor='white', linewidth=.5, zorder=3)[0]
+        bar.set_gid(f'scenario-{scene["number"]}-{model}-{key}-value')
+        if value == 0:
+            ax.scatter([0], [j], marker='|', s=50, color=COLORS[model], zorder=4)
+        text = f'{value:.0f}%' if unit == '%' else f'{value:.2f}'
+        # Keep labels inside the plotting area, with sufficient headroom at 100%.
+        ax.text(value+max_value*.022, j, text, fontsize=12.5, va='center',
+                color=STYLE['ink'], weight='bold' if model == 'GEAR-Nav' else 'normal',
+                bbox={'facecolor': 'white', 'edgecolor': 'none', 'pad': .3, 'alpha': .9}, zorder=5)
+    ax.set(xlim=(-max_value*.01, max_value*1.18), ylim=(3.65, -.65), xticks=ticks)
+    ax.set_yticks(range(4), labels=MODELS if column == 0 else ['']*4)
+    ax.tick_params(axis='y', length=0, labelsize=13, pad=8)
+    if column == 0:
+        ax.get_yticklabels()[-1].set_weight('bold')
+    ax.tick_params(axis='x', labelsize=11, length=2.5, pad=2)
+    for side in ['top', 'right', 'left']:
+        ax.spines[side].set_visible(False)
+    ax.spines['bottom'].set_color('#CED2D8')
     return ax
-
-
-def summary_panel(fig, scene, x):
-    box = FancyBboxPatch((x, .064), WIDTH, .160, transform=fig.transFigure,
-                          boxstyle='round,pad=0.004,rounding_size=0.008',
-                          linewidth=.8, edgecolor=STYLE['panel_edge'], facecolor=STYLE['panel_fill'], zorder=-1)
-    fig.add_artist(box)
-    n, k, contacts = scene['n'], scene['success_count'], scene['contact_count']
-    fig.text(x+.013, .191, f'{100*k/n:.0f}%', fontsize=27, weight='bold', va='center')
-    fig.text(x+.119, .192, f'{k}/{n} successes', fontsize=17, va='center')
-    fig.text(x+.013, .153, f'95% CI  {interval(scene["success_wilson95"])}', fontsize=14)
-    fig.text(x+.013, .119, f'Contacts: {contacts}/{n}  |  95% CI  {interval(scene["contact_wilson95"])}', fontsize=12.5)
-    ax = fig.add_axes([x+.013, .073, WIDTH-.026, .030])
-    for i, t in enumerate(scene['tracks']):
-        ax.scatter(i % 25, 1-i//25, marker='X' if t['contact'] else 'o', s=14 if t['contact'] else 8,
-                   color=STYLE['contact'] if t['contact'] else STYLE['path'], linewidths=.3)
-    ax.set(xlim=(-.7, 24.7), ylim=(-.7, 1.7))
-    ax.set_axis_off()
 
 
 def full_figure():
-    fig = plt.figure(figsize=(12.4, 8.8))
-    fig.text(LEFT, .977, 'Isaac Sim evaluation', fontsize=23, weight='bold', va='top')
-    fig.text(.981, .974, 'GEAR-Nav · oracle-goal diagnostic', fontsize=18, ha='right', va='top')
-    fig.text(LEFT, .930, 'Three fixed scenes · 50 pedestrian timings per scene · 150 completed metric trials',
-             fontsize=16, color=STYLE['muted'])
-    for i, scene in enumerate(DATA['scenes']):
-        x = LEFT + i*STEP
-        fig.text(x+WIDTH/2, .897, f"Scenario {scene['number']} · {scene['name']}",
-                 ha='center', va='top', fontsize=17)
-        h = WIDTH * 12.4/8.8 * 9/16
-        image_panel(fig, scene, x, .599, h)
-        trajectory_panel(fig, scene, x)
-        summary_panel(fig, scene, x)
-    fig.text(LEFT, .565, 'Recorded robot trajectories', fontsize=17, weight='bold')
-    fig.text(.981, .565, 'Shared metric scale; all 50 trials shown in each scene',
-             fontsize=14, color=STYLE['muted'], ha='right')
-    handles = [Line2D([0], [0], color=STYLE['path'], lw=3, label='GEAR-Nav example'),
-               Line2D([0], [0], color=STYLE['path'], alpha=.3, lw=3, label='Other metric trials'),
-               Line2D([0], [0], color=STYLE['contact'], lw=2, label='Trial with contact'),
-               Line2D([0], [0], color=STYLE['ink'], marker='o', lw=0, ms=5, label='Start'),
-               Line2D([0], [0], color=STYLE['goal'], marker='*', markeredgecolor=STYLE['ink'],
-                      lw=0, ms=11, label='Goal (1.5 m radius)')]
-    fig.legend(handles=handles, loc='center', bbox_to_anchor=(.5, .266), ncol=5,
-               frameon=False, fontsize=14, handlelength=1.5, columnspacing=1.5)
-    fig.text(LEFT, .237, 'Repeated-trial outcomes', fontsize=17, weight='bold')
-    fig.text(.981, .237, 'Nominal 95% Wilson intervals', fontsize=14, color=STYLE['muted'], ha='right')
-    fig.text(.5, .022, 'One dot per metric trial; red × denotes contact. Images are separate success reruns, excluded from the statistics.',
-             fontsize=13, color=STYLE['muted'], ha='center')
+    fig = plt.figure(figsize=(12.4, 9.4))
+    fig.text(.020, .980, 'Isaac Sim evaluation', fontsize=24, weight='bold', va='top')
+    fig.text(.980, .976, 'GEAR-Nav and navigation baselines', fontsize=17, ha='right', va='top')
+    fig.text(.020, .932, 'Recorded simulation views', fontsize=16, weight='bold')
+    fig.text(.980, .932, 'Illustrative images from separate runs', fontsize=14, ha='right', color=STYLE['muted'])
+    image_y, image_h = .703, WIDTH*12.4/9.4*9/16
+    for i, view in enumerate(DATA['illustrative_views']):
+        x = LEFT+i*STEP
+        photo(fig, view, x, image_y, WIDTH, image_h)
+        fig.text(x+WIDTH/2, .677, view['name'], fontsize=15, ha='center', color=STYLE['muted'])
+    fig.text(.020, .635, 'Navigation results', fontsize=17, weight='bold')
+    fig.text(.980, .635, 'Success, collision rate, and obstacle clearance', fontsize=14,
+             ha='right', color=STYLE['muted'])
+    for i, scene in enumerate(DATA['scenarios']):
+        x = LEFT+i*STEP
+        fig.text(x+WIDTH/2, .605, f'Scenario {scene["number"]}', fontsize=18, ha='center', weight='bold')
+        for metric in METRICS:
+            bars(fig, scene, i, metric)
+    for _, label, unit, bottom, _, _ in METRICS:
+        fig.text(.020, bottom+.125, f'{label} ({unit})', fontsize=16, weight='bold')
+    fig.text(.020, .035, 'Baselines: VEGA. GEAR-Nav: updated simulation table.', fontsize=12.5, color=STYLE['muted'])
+    fig.text(.980, .035, 'Bars show aggregate values.', fontsize=12.5,
+             ha='right', color=STYLE['muted'])
     export(fig, 'isaacsim_results')
 
 
 def scene_strip():
-    """A compact standalone scene row for a possible later real/sim composition."""
-    fig = plt.figure(figsize=(12.4, 4.15))
-    for i, scene in enumerate(DATA['scenes']):
-        x = LEFT+i*STEP
-        fig.text(x+WIDTH/2, .972, f"Scenario {scene['number']}", fontsize=23, ha='center', va='top')
-        fig.text(x+WIDTH/2, .872, scene['name'], fontsize=17, ha='center')
-        image_panel(fig, scene, x, .255, WIDTH*12.4/4.15*9/16)
-        fig.text(x+WIDTH/2, .181, f"{scene['success_count']}/{scene['n']} successes  ·  {scene['contact_count']}/{scene['n']} contacts",
-                 fontsize=18, ha='center')
-        fig.text(x+WIDTH/2, .100, f"Success 95% CI: {interval(scene['success_wilson95'])}",
-                 fontsize=15, ha='center', color=STYLE['muted'])
-    fig.text(.5, .020, 'Isaac Sim · GEAR-Nav with oracle goals · 50 metric trials per scene · separate third-person success reruns',
-             fontsize=14, ha='center', color=STYLE['muted'])
+    fig = plt.figure(figsize=(12.4, 4.3))
+    fig.text(.020, .966, 'Isaac Sim · GEAR-Nav results', fontsize=21, weight='bold', va='top')
+    fig.text(.980, .956, 'Images: illustrative recordings', fontsize=15, ha='right', va='top', color=STYLE['muted'])
+    width, left, step = .306, .019, .328
+    for i, view in enumerate(DATA['illustrative_views']):
+        x = left+i*step
+        photo(fig, view, x, .304, width, width*12.4/4.3*9/16)
+        scene = DATA['scenarios'][i]
+        metrics = scene['metrics']['GEAR-Nav']
+        fig.text(x+width/2, .235, f'Scenario {scene["number"]}', fontsize=19, ha='center', weight='bold')
+        fig.text(x+width/2, .140, f'Success {100*metrics["success"]:.0f}%  ·  Collision {100*metrics["collision"]:.0f}%', fontsize=18, ha='center')
+        fig.text(x+width/2, .060, f'Clearance {metrics["clearance_m"]:.2f} m', fontsize=17, ha='center', color=STYLE['muted'])
     export(fig, 'isaacsim_scene_strip')
 
 
 def verify():
     provenance = json.loads((HERE/'provenance.json').read_text())
-    protected = provenance['protected_realworld_pdf']
-    pdf = HERE.parents[1] / protected['path']
-    unchanged = hashlib.sha256(pdf.read_bytes()).hexdigest() == protected['sha256']
-    assert unchanged, 'The protected real-world PDF changed.'
-    assert sum(s['n'] for s in DATA['scenes']) == 150
-    assert [s['success_count'] for s in DATA['scenes']] == [50, 49, 50]
-    assert [s['contact_count'] for s in DATA['scenes']] == [0, 1, 0]
-    for scene in DATA['scenes']:
-        assert len(scene['tracks']) == scene['n']
-        assert all(len(t['world_xy_m']) == len(t['frames']) > 1 for t in scene['tracks'])
-        xy = np.concatenate([transform(scene, t['world_xy_m']) for t in scene['tracks']])
-        assert xy[:, 0].min() > -.75 and xy[:, 0].max() < 10
-        assert xy[:, 1].min() > -3 and xy[:, 1].max() < 3
-    writeup = {'metric_trials': 150, 'trajectory_count': 150, 'successes': 149, 'contact_trials': 1,
-               'realworld_pdf_sha256_unchanged': unchanged, 'all_trajectory_samples_in_plot_limits': True,
-               'outputs': {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
-                           for stem in ['isaacsim_results', 'isaacsim_scene_strip']
-                           for ext in ['svg', 'pdf', 'png'] for p in [HERE/f'{stem}.{ext}']}}
-    (HERE/'verification.json').write_text(json.dumps(writeup, indent=2)+'\n')
+    for path, digest in provenance['protected_paper_files'].items():
+        assert sha(ROOT / path) == digest, f'Paper file changed: {path}'
+    expected = [(0.92, 0.06, 0.78), (0.84, 0.10, 0.46), (0.86, 0.12, 0.71)]
+    for scene, values in zip(DATA['scenarios'], expected):
+        assert tuple(scene['metrics']['GEAR-Nav'].values()) == values
+    svg = ET.parse(HERE / 'isaacsim_results.svg')
+    groups = [el for el in svg.iter() if el.attrib.get('id', '').endswith('-value')]
+    assert len(groups) == 36
+    assert sum(el.tag.endswith('}image') for el in svg.iter()) == 3
+    text = (HERE/'isaacsim_results.svg').read_text()
+    assert 'oracle-goal diagnostic' not in text and 'Wilson' not in text
+    result = {'numeric_values': 36, 'baseline_values_crosschecked_to_vega': 27,
+              'gear_values': expected, 'svg_metric_groups': len(groups), 'embedded_images': 3,
+              'old_diagnostic_paths_and_statistics_excluded': True,
+              'paper_files_unchanged': True, 'gear_trial_count_not_inferred': True,
+              'outputs': {p.name: sha(p) for stem in ['isaacsim_results', 'isaacsim_scene_strip']
+                          for ext in ['svg', 'pdf', 'png'] for p in [HERE / f'{stem}.{ext}']}}
+    (HERE/'verification.json').write_text(json.dumps(result, indent=2)+'\n')
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.parse_args()
     full_figure()
     scene_strip()
     verify()
-    print('Rendered SVG/PDF/PNG masters and verified 150 measured trajectories. Real-world PDF unchanged.')
+    print('Rendered supplied comparison results (PDF/SVG/PNG). Verified all 36 metric groups and unchanged paper files.')

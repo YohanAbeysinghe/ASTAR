@@ -1,99 +1,73 @@
-# Isaac Sim results figure
+# Isaac Sim evaluation figure
 
-Separate review draft for the three recorded Isaac Sim scenarios. The existing
-`GEAR-Nav Overleaf/fig/astar_realworld.pdf` and `main.tex` are unchanged.
-Keep these drafts in `figs/`; do not copy them into the paper repository or
-insert them into the paper unless the user explicitly requests it.
+The current [PDF](isaacsim_results.pdf), [PNG](isaacsim_results.png), and
+[editable SVG](isaacsim_results.svg) visualize **all 36 simulation values** in
+the paper's updated `tab:isaac_sim`. GEAR-Nav is orange; OmniVLA, TIC-VLA, and
+NaVILA retain the blue, magenta, and purple colors of the real-world figure.
+The figure shows success, collision rate, and clearance for each scenario.
 
-- [Full figure](isaacsim_results.pdf): third-person images, all 150 recorded
-  trajectories, and repeated-trial outcomes with nominal 95% Wilson intervals.
-- [PNG preview](isaacsim_results.png) and [editable SVG](isaacsim_results.svg).
-- [Compact scene row](isaacsim_scene_strip.pdf): three images and concise
-  statistics for a possible later composition with the real-world figure.
+**Keep these drafts in `figs/`. Do not copy them into the paper repository or
+insert them into the paper unless the user explicitly requests it.** No paper
+files, including `main.tex`, `supplementary.tex`, or the real-world figure,
+were changed for this update.
+
+| Scenario | GEAR-Nav success | Collision | Clearance |
+| --- | ---: | ---: | ---: |
+| 1 | 92% | 6% | 0.78 m |
+| 2 | 84% | 10% | 0.46 m |
+| 3 | 86% | 12% | 0.71 m |
+
+- [Compact scene row](isaacsim_scene_strip.pdf): three recorded views and the
+  current GEAR-Nav aggregate results.
 - [Paper-size proof](review/paper_proof.pdf): full figure at 7.12 inches wide
-  with the proposed caption. Use the full figure across two paper columns.
-- [Caption](caption.tex) and [optional LaTeX placement](paper_integration.tex).
+  with the proposed [caption](caption.tex).
+- [Optional LaTeX placement](paper_integration.tex) is a local review snippet;
+  it has not been inserted into the paper.
 
-The photos are original recorded JPEGs, with target-person stars added as
-manual image annotations. Other elements are editable vectors. Orange, yellow,
-pale blue panels, and serif type follow the real-world and shared figure styles.
-No generated imagery, fabricated routes, model inference, or Figma calls are used.
+## Source and interpretation
 
-## Verified experiment scope
+`prepare.py` extracts the table directly from `GEAR-Nav Overleaf/main.tex`.
+All 27 baseline values are independently checked against the active simulation
+table in `Overleaf--VEGA/sec/5_results.tex`. They are previously reported VEGA
+results. GEAR-Nav's nine values were supplied by the user and added to the paper
+in commit `a38487f`. `GEAR-Nav Overleaf/BASELINE_RESULTS.md` documents the source
+and the outstanding verification of run provenance and protocol matching.
 
-| Scene | Completed metric trials | Successes | Contact trials | Success 95% interval |
-| --- | ---: | ---: | ---: | --- |
-| 1: Hospital lobby | 50 | 50 | 0 | 92.9–100.0% |
-| 2: Hospital corridor | 50 | 49 | 1 | 89.5–99.6% |
-| 3: Warehouse | 50 | 50 | 0 | 92.9–100.0% |
+Rates are converted from 0–1 to percentages; clearance stays in meters. The
+source defines clearance as average minimum clearance over non-colliding
+trials. Success and collision are plotted independently. No counts, error bars,
+confidence intervals, or significance claims are inferred from the rounded
+aggregate values. The reference baseline trial count is 50 per scenario;
+the new GEAR-Nav count and per-trial logs have not been supplied.
 
-The raw checkpoint is step 57,500 with 14 refinement rounds. Every policy
-request receives the **exact simulator goal transformed into the robot frame**.
-This is an **oracle-goal diagnostic**, not a language-only comparison. Trial
-outcomes are conditional on three fixed scene geometries and their pedestrian
-timings. Scene selection followed VEGA development screening, as disclosed by
-the original report. These are custom Isaac Sim trials, not official benchmark
-scores. There are no matched baseline results in this figure, so no claim of
-comparative statistical significance is made.
+The three photos are unchanged recorded third-person JPEGs from the earlier
+local diagnostic: hospital lobby, hospital corridor, and warehouse. They are
+explicitly **illustrative views from separate runs**, not evidence that the
+new metrics use those exact scenes or goals. The old goal markers, trajectory
+plots, contact event labels, trial counts, and Wilson intervals are excluded.
+No imagery or trajectories were generated or retouched.
 
-`astar_57500_oracle_goal_100/README.md` describes a planned extension to 100
-trials per scene. Its extension result directories contain no completed episode
-JSONs. The cumulative summary is stale (113 trials); the validated base report
-and all 150 raw results agree. Neither the planned extension, selected success
-reruns, nor challenge variants in `SimResults/picked` enter these statistics.
+The superseded 150-trial oracle-goal figure and its evidence are retained in
+[`oracle_goal_diagnostic/`](oracle_goal_diagnostic/README.md). Its values
+(100%, 98%, 100% success) are distinct from the new supplied results and do not
+contribute to this figure.
 
-## Evidence and interpretation
+## Rebuild and validation
 
-- `trial_outcomes.csv`: one row per validated metric trial.
-- `evidence.json`: frozen outcomes, all saved pose samples, scene coordinate
-  transforms, and selected image metadata; allows rendering without SimResults.
-- `provenance.json`: source hashes for all 150 results and their pose sequences,
-  experiment protocol, source image hashes, protected real-world PDF hash, and
-  interpretation limits. Every raw result matches the validated report hash;
-  frozen configuration hashes also match the evaluation manifest.
-- `verification.json`: output hashes, counts, trajectory bounds, and protected
-  real-world PDF preservation.
-- `style.json`: portable snapshot of relevant shared colors and serif font.
-
-Trajectories join saved poses every 10 simulator frames without smoothing. One
-rigid frame per scene uses the configured start and the first trial's initial
-heading. The last recorded state may precede termination slightly. The cross on
-the red path is that last pose; it does not locate a contact event. Shaded goal
-disks use the frozen 1.5 m success threshold. All trajectories and complete goal
-disks fit within the shared axes. Repeated paths are nearly coincident because
-geometry is fixed; the rendering preserves this measured behavior.
-
-Photo selection is the earliest episode ID among each scene's available seeded
-random collision-free success reruns: scene 1 episode 21, scene 2 episode 01,
-and scene 3 episode 12. Observations 8, 16, and 8 respectively avoid startup noise
-and expose the target person (occluded earlier in the corridor). These separate
-reruns illustrate scene appearance, not the plotted metric trajectories.
-
-The figure contains success and actual PhysX contact counts. FOV human-surface
-clearance is preserved in the evidence but is not labelled all-obstacle clearance
-or mixed with real-world safety metrics. Wilson intervals are nominal descriptive
-intervals, not a significance test or evidence of generalization to new maps.
-
-## Rebuild
-
-From the repository root, using the frozen portable evidence:
-
-```sh
-.venv/bin/python figs/isaacsim_results/render.py
-```
-
-To refresh from original local results (requires SimResults and the frozen
-benchmark configuration paths):
+To refresh values from the paper and check the reference baseline entries:
 
 ```sh
 .venv/bin/python figs/isaacsim_results/prepare.py
 .venv/bin/python figs/isaacsim_results/render.py
 ```
 
-To compile the paper-size proof, run `pdflatex -interaction=nonstopmode
--halt-on-error paper_proof.tex` from this folder's `review/` directory.
+`render.py` alone uses the frozen `evidence.json`. `aggregate_results.csv`
+contains the 12 method/scenario rows. `provenance.json` records source-file
+hashes, image provenance, source commit, and protected paper-file hashes.
+`verification.json` records all 36 plotted metric groups and output hashes.
 
-The five figure and caption files previously copied into the paper repository
-were removed at the user's request. No Isaac Sim draft assets remain in that
-repository. All editable masters, previews, evidence, and the optional placement
-snippet remain here for review; no figure was inserted into `main.tex`.
+To rebuild the paper-size proof, run `pdflatex -interaction=nonstopmode
+-halt-on-error paper_proof.tex` from `figs/isaacsim_results/review/`.
+
+Only the GEAR-Nav workspace repository is updated and pushed. The paper
+repository is read for values and left unchanged.

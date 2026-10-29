@@ -1,175 +1,121 @@
-"""Freeze verified Isaac Sim evidence; no simulator or model inference required."""
+"""Freeze supplied simulation comparison results, without editing the paper."""
 from __future__ import annotations
 
 import csv
 import hashlib
 import json
-import math
 from pathlib import Path
-import shutil
-from statistics import NormalDist
-
-import numpy as np
-import yaml
+import re
+import subprocess
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-BASE = ROOT / 'SimResults/astar_57500_oracle_goal'
-EXT = ROOT / 'SimResults/astar_57500_oracle_goal_100'
-ASSETS = HERE / 'assets'
-SELECTION = [(1, 'episode_far20_s1_21', 'Hospital lobby'),
-             (2, 'episode_far20_s2_01', 'Hospital corridor'),
-             (3, 'episode_warehouse50_s3_12', 'Warehouse')]
+PAPER = ROOT / 'GEAR-Nav Overleaf'
+MODELS = ('OmniVLA', 'TIC-VLA', 'NaVILA', 'GEAR-Nav')
 
 
 def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def read(path):
-    return json.loads(path.read_text())
+def write(path, value):
+    path.write_text(json.dumps(value, indent=2, allow_nan=False) + '\n')
 
 
-def write(path, obj):
-    path.write_text(json.dumps(obj, indent=2, allow_nan=False) + '\n')
+def paper_values(text):
+    block = text.split(r'\label{tab:isaac_sim}', 1)[1].split(r'\end{table}', 1)[0]
+    pattern = r'(OmniVLA|TIC-VLA|NaVILA|\\textbf\{GEAR-Nav\})\s*&(.+?)\\\\'
+    result = {}
+    for label, body in re.findall(pattern, block, re.S):
+        label = label.replace(r'\textbf{', '').replace('}', '')
+        values = [float(cell.strip()) for cell in body.split('&')]
+        assert len(values) == 9 and label not in result
+        result[label] = [dict(zip(('success', 'collision', 'clearance_m'), values[i:i+3]))
+                         for i in range(0, 9, 3)]
+    assert tuple(result) == MODELS
+    for scenes in result.values():
+        for row in scenes:
+            assert 0 <= row['success'] <= 1 and 0 <= row['collision'] <= 1
+            assert row['clearance_m'] >= 0
+    return result
 
 
-def wilson(k, n):
-    z = NormalDist().inv_cdf(0.975)
-    p = k / n
-    center = (p + z*z/(2*n)) / (1 + z*z/n)
-    half = z * math.sqrt(p*(1-p)/n + z*z/(4*n*n)) / (1 + z*z/n)
-    return [max(0., center-half), min(1., center+half)]
-
-
-def poses_for(directory):
-    files = sorted(directory.glob('robot_state_frame_*.json'))
-    states = [read(p) for p in files]
-    assert states and all(np.isfinite(s['position']).all() for s in states)
-    frames = [s['frame_count'] for s in states]
-    assert frames == sorted(set(frames))
-    # Hash both file names and bytes so missing or reordered samples are detected.
-    digest = hashlib.sha256()
-    for path in files:
-        digest.update(path.name.encode())
-        digest.update(path.read_bytes())
-    return states, digest.hexdigest()
+def reference_values(text):
+    # Only the active simulation table at the start of the reference manuscript.
+    block = text.split(r'\begin{tabular}{llrrr}', 1)[1].split(r'\end{tabular}', 1)[0]
+    block = re.sub(r'\\textbf\{([^}]+)\}', r'\1', block)
+    result, scene = {}, None
+    for line in block.splitlines():
+        match = re.search(r'Scn([1-3])', line)
+        if match:
+            scene = int(match.group(1)) - 1
+        match = re.search(r'&\s*(OmniVLA|TIC-VLA|NaVILA)\s*&\s*([\d.]+)\s*&\s*([\d.]+)\s*&\s*([\d.]+)', line)
+        if match:
+            assert scene is not None
+            result[(match[1], scene)] = tuple(float(match[i]) for i in range(2, 5))
+    assert len(result) == 9
+    return result
 
 
 def main():
-    ASSETS.mkdir(exist_ok=True)
-    manifest = read(BASE / 'configs/manifest.json')
-    status = read(BASE / 'report/status.json')
-    reported = read(BASE / 'report/episodes.json')
-    aggregates = read(BASE / 'report/metrics.json')
-    video_selection = read(EXT / 'videos/thirds person views/selection.json')
-    assert status['complete'] and status['completed'] == manifest['requested'] == len(reported) == 150
-    assert sha(BASE / 'configs/manifest.json') == status['manifest_sha256']
-    report_rows = {(r['scenario'], r['episode']): r for r in reported}
-    aggregate_rows = {r['scenario']: r for r in aggregates}
-    scenes, rows, provenance = [], [], []
-    for scene_number, display_episode, name in SELECTION:
-        scenario = f'scenario{scene_number}'
-        group = next(g for g in manifest['groups'] if g['scenario'] == scenario)
-        summary = aggregate_rows[scenario]
-        assert summary['complete'] and summary['scenario_validated'] and summary['config_matches_manifest']
-        # Bind each displayed score to the validated frozen configuration.
-        config = Path(group['config'])
-        assert sha(config) == group['config_sha256']
-        configuration = yaml.safe_load(config.read_text())
-        assert group['checkpoint']['goal_modality'] == 'oracle_relative_waypoint_diagnostic'
-        tracks, result_rows = [], []
-        for episode in group['episodes']:
-            path = BASE / 'results' / scenario / f'{episode}.json'
-            raw = read(path)
-            report = report_rows[(scenario, episode)]
-            assert sha(path) == report['source_sha256']
-            assert raw['episode'] == episode and not raw.get('error')
-            assert raw['duration_frames'] > 0 and raw['measurement_frames'] == raw['duration_frames']
-            assert raw['measurement_version'] == 'physx_capsules_fov_v1'
-            assert raw['success'] == report['success'] and raw['contact_collision'] == report['collision']
-            states, pose_digest = poses_for(path.with_suffix('').with_name(episode + '_evidence'))
-            tracks.append({'episode': episode, 'success': raw['success'],
-                           'contact': raw['contact_collision'],
-                           'frames': [s['frame_count'] for s in states],
-                           'world_xy_m': [s['position'][:2] for s in states]})
-            row = {key: report[key] for key in ['scenario', 'episode', 'success', 'collision',
-                   'goal_progress', 'navigation_error_m', 'fov_clearance_collision_zero_m']}
-            rows.append(row)
-            result_rows.append(row)
-            provenance.append({'path': str(path.relative_to(ROOT)), 'sha256': sha(path),
-                               'pose_files': len(states), 'pose_sequence_sha256': pose_digest})
-        first = read(BASE / 'results' / scenario / f"{group['episodes'][0]}.json")
-        first_states, _ = poses_for(BASE / 'results' / scenario / f"{group['episodes'][0]}_evidence")
-        w, x, y, z = first_states[0]['quaternion']
-        yaw = math.atan2(2*(w*z+x*y), 1-2*(y*y+z*z))
-        # One rigid frame per scene; do not realign individual trial trajectories.
-        frame = [[math.cos(yaw), math.sin(yaw)], [-math.sin(yaw), math.cos(yaw)]]
-        k = sum(r['success'] for r in result_rows)
-        contacts = sum(r['collision'] for r in result_rows)
-        assert (len(result_rows), k, contacts) == (summary['completed'], summary['success_count'], summary['collision_count'])
-        rerun_root = EXT / 'random_video_reruns/results' / scenario
-        rerun = read(rerun_root / f'{display_episode}.json')
-        assert rerun['success'] and not rerun['contact_collision']
-        assert display_episode in [r['episode'] for r in video_selection['scenarios'][scenario]]
-        pred_root = rerun_root / 'predictions' / display_episode
-        # Avoid startup noise; the corridor target is occluded until observation 16.
-        observation = 16 if scene_number == 2 else 8
-        source_image = pred_root / f'prediction_{observation:05d}_third_person.jpg'
-        source_prediction = pred_root / f'prediction_{observation:05d}.json'
-        image_name = f'scene_{scene_number}_third_person.jpg'
-        shutil.copy2(source_image, ASSETS / image_name)
-        image_record = read(source_prediction)
-        provenance.append({'path': str(source_image.relative_to(ROOT)), 'sha256': sha(source_image),
-                           'prediction': str(source_prediction.relative_to(ROOT)),
-                           'prediction_sha256': sha(source_prediction),
-                           'frame': image_record['frame'], 'policy_observation_index': observation,
-                           'selection': 'Earliest episode ID among available seeded-random success reruns.'})
-        scene = {'scenario': scenario, 'number': scene_number, 'name': name,
-                 'image': f'assets/{image_name}', 'display_episode': display_episode,
-                 'image_frame': image_record['frame'],
-                 'goal_marker_uv': {1: [.516, .18], 2: [.50, .18], 3: [.62, .20]}[scene_number],
-                 'goal_marker_note': 'Manual image annotation of the target person; not a calibrated projection.',
-                 'start_world_xyz_m': first['start'], 'goal_world_xyz_m': first['goal'],
-                 'world_to_start_frame': frame, 'tracks': tracks,
-                 'goal_radius_m': configuration.get('success_threshold', 1.5),
-                 'n': len(result_rows), 'success_count': k, 'contact_count': contacts,
-                 'success_wilson95': wilson(k, len(result_rows)),
-                 'contact_wilson95': wilson(contacts, len(result_rows)),
-                 'mean_fov_human_clearance_contact_zero_m': summary['mean_minimum_fov_clearance_collision_zero_m']}
-        scenes.append(scene)
-    write(HERE / 'evidence.json', {'scenes': scenes})
-    with (HERE / 'trial_outcomes.csv').open('w') as stream:
-        writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator='\n')
+    main_tex = PAPER / 'main.tex'
+    reference = ROOT / 'Overleaf--VEGA/sec/5_results.tex'
+    notes = PAPER / 'BASELINE_RESULTS.md'
+    values = paper_values(main_tex.read_text())
+    baseline_values = reference_values(reference.read_text())
+    for model in MODELS[:-1]:
+        for i, metrics in enumerate(values[model]):
+            assert tuple(metrics.values()) == baseline_values[(model, i)]
+    old = json.loads((HERE / 'oracle_goal_diagnostic/provenance.json').read_text())
+    photo_sources = [s for s in old['sources'] if s['path'].endswith('_third_person.jpg')]
+    assert len(photo_sources) == 3
+    names = ('Hospital lobby', 'Hospital corridor', 'Warehouse')
+    views = []
+    for i, source in enumerate(photo_sources, 1):
+        image = HERE / f'assets/scene_{i}_third_person.jpg'
+        assert sha(image) == source['sha256']
+        views.append({'image': str(image.relative_to(HERE)), 'name': names[i-1],
+                      'sha256': sha(image), 'source': source['path'],
+                      'source_prediction': source['prediction'], 'frame': source['frame'],
+                      'role': 'Illustrative recorded view; not matched to the supplied aggregate results.'})
+    evidence = {
+        'source_table': 'tab:isaac_sim', 'models': list(MODELS),
+        'scenarios': [{'number': i+1, 'metrics': {m: values[m][i] for m in MODELS}} for i in range(3)],
+        'illustrative_views': views,
+        'baseline_source': 'Previously reported VEGA simulation results, transcribed in the current paper.',
+        'gear_source': 'User-supplied aggregate values in the current paper.',
+        'baseline_trials_per_scenario': 50,
+        'gear_trials_per_scenario': None,
+        'confidence_intervals': None,
+    }
+    write(HERE / 'evidence.json', evidence)
+    with (HERE / 'aggregate_results.csv').open('w') as stream:
+        writer = csv.DictWriter(stream, fieldnames=['scenario', 'method', 'success_rate', 'collision_rate', 'clearance_m'], lineterminator='\n')
         writer.writeheader()
-        writer.writerows(rows)
-    planned_extension = read(EXT / 'configs/manifest.json')
-    available_extension = sum((EXT / 'results' / g['scenario'] / f'{e}.json').exists()
-                              for g in planned_extension['groups'] for e in g['episodes'])
-    protected = ROOT / 'GEAR-Nav Overleaf/fig/astar_realworld.pdf'
+        for scene in evidence['scenarios']:
+            for model, metrics in scene['metrics'].items():
+                writer.writerow({'scenario': scene['number'], 'method': model,
+                                 'success_rate': metrics['success'], 'collision_rate': metrics['collision'],
+                                 'clearance_m': metrics['clearance_m']})
+    protected = ['main.tex', 'supplementary.tex', 'BASELINE_RESULTS.md', 'fig/astar_realworld.pdf']
     write(HERE / 'provenance.json', {
-        'protocol': manifest['protocol'], 'checkpoint_step': 57500, 'refinement_rounds': 14,
-        'goal_conditioning': 'Exact simulator goal transformed into the robot frame (oracle-goal diagnostic).',
-        'metric_trials': 150, 'trials_per_scene': 50,
-        'planned_additional_trials': planned_extension['requested'], 'available_additional_trials': available_extension,
-        'stale_summary_ignored': str((EXT / 'report/cumulative_summary.json').relative_to(ROOT)),
-        'stale_summary_reason': 'Lists 113 completed trials, but all 150 validated base results now exist; no extension results exist.',
-        'qualitative_reruns_excluded_from_statistics': True,
-        'scene_selection': status['selection_disclosure'],
-        'repetition_unit': 'Fixed scene geometry with paired pedestrian initial-idle timings, not independent scenes.',
-        'interval': 'Two-sided nominal 95% Wilson score interval, z = NormalDist().inv_cdf(0.975). Descriptive and conditional on this timing protocol.',
-        'significance': 'No baseline significance claim: no matched baseline trials are included in this figure.',
-        'clearance': 'FOV human-capsule surface gap; contact episodes contribute zero. Not all-obstacle clearance.',
-        'trajectory': 'Recorded robot states every 10 simulator frames. Polyline joins samples; no smoothing. Last saved pose may precede termination.',
-        'coordinates': 'One rigid transform per scene, fixed from first metric trial heading; forward/left metres relative to configured start.',
-        'image_processing': 'Original recorded third-person JPEGs; no generation, retouching, or color adjustment.',
-        'video_selection_sha256': sha(EXT / 'videos/thirds person views/selection.json'),
-        'manifest_sha256': sha(BASE / 'configs/manifest.json'),
-        'report_episodes_sha256': sha(BASE / 'report/episodes.json'),
-        'protected_realworld_pdf': {'path': str(protected.relative_to(ROOT)), 'sha256': sha(protected)},
-        'sources': provenance,
+        'result_source': 'GEAR-Nav Overleaf/main.tex, table tab:isaac_sim',
+        'paper_commit_at_extraction': subprocess.check_output(['git', '-C', str(PAPER), 'rev-parse', 'HEAD'], text=True).strip(),
+        'paper_main_sha256': sha(main_tex), 'paper_provenance_notes_sha256': sha(notes),
+        'reference_source': str(reference.relative_to(ROOT)), 'reference_sha256': sha(reference),
+        'baseline_cells_crosschecked': 27, 'total_supplied_numeric_cells': 36,
+        'gear_values': values['GEAR-Nav'],
+        'gear_run_provenance': 'Not supplied in the source table; no checkpoint, trial count, goal modality, or per-trial logs are inferred.',
+        'rates': 'Original 0–1 success and collision rates are multiplied by 100 for display as percentages.',
+        'clearance': 'Meters, retaining the supplied table definition: average minimum clearance over non-colliding trials.',
+        'uncertainty': 'No intervals, p-values, or trial counts are inferred for GEAR-Nav from rounded aggregate rates.',
+        'protocol_comparability': 'The paper records that comparison protocol matching remains unverified; plotted values are descriptive.',
+        'images': views,
+        'old_diagnostic': 'oracle_goal_diagnostic/ contains the superseded 150-trial oracle-goal figure and evidence. Its trajectories and counts are excluded from this comparison.',
+        'protected_paper_files': {str((PAPER / p).relative_to(ROOT)): sha(PAPER / p) for p in protected},
+        'paper_repository_changes_authorized': False,
     })
-    print('Verified and froze 150 metric trials, 150 recorded trajectories, and three third-person frames.')
+    print('Extracted all 36 supplied values; independently matched all 27 baseline values to VEGA. Paper files unchanged.')
 
 
 if __name__ == '__main__':
