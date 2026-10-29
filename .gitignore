@@ -250,5 +250,5 @@ Overleaf--VEGA/
 .gitignore
 
 # Keep local paper and navigation checkouts out of this repository.
-/Overleaf---Action-free-Spatial-Trajectory-Refinement-via-Energy-based-Aggregation/
+/GEAR-Nav Overleaf/
 /NavigationStack/
