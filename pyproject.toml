@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/YohanAbeysinghe/ASTAR"
+Repository = "https://github.com/YohanAbeysinghe/GEAR-Nav"
 
 [project.optional-dependencies]
 dev = [

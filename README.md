@@ -343,7 +343,7 @@ Install [`uv`](https://docs.astral.sh/uv/), clone the repository, and initialize
 the OpenPI submodule:
 
 ```bash
-git clone https://github.com/YohanAbeysinghe/ASTAR.git GEAR-Nav
+git clone https://github.com/YohanAbeysinghe/GEAR-Nav.git GEAR-Nav
 cd GEAR-Nav
 git submodule update --init --recursive third_party/openpi
 GIT_LFS_SKIP_SMUDGE=1 uv sync --extra dev
