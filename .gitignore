@@ -239,14 +239,12 @@ tests/wandb images/
 eval/
 slurm/continue_full_partition_depth14_a6000.sbatch
 deployment/
-# Local real-world experiment recordings (also covered by figs/ below).
-/figs/realworld_exp/
-figs/
+# Keep all figure assets, scripts, and recordings local.
+/figs/
 deployment_bundle.zip
 deployment_bundle.zip.sha256
 SimResults/
 Overleaf--VEGA/
-/figs/
 .gitignore
 
 # Keep local paper and navigation checkouts out of this repository.
