@@ -28,5 +28,7 @@
   ],
   "main_tex_unchanged": true,
   "realworld_pdf_unchanged": true,
-  "integration_status": "Separate review draft; no placement in main.tex."
+  "integration_status": "Paper additions reverted at the user's request. The listed paper paths are historical and have been removed; drafts remain only in figs/isaacsim_results. No placement in main.tex.",
+  "paper_assets_currently_present": false,
+  "future_paper_changes_require_explicit_request": true
 }

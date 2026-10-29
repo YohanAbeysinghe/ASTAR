@@ -2,6 +2,8 @@
 
 Separate review draft for the three recorded Isaac Sim scenarios. The existing
 `GEAR-Nav Overleaf/fig/astar_realworld.pdf` and `main.tex` are unchanged.
+Keep these drafts in `figs/`; do not copy them into the paper repository or
+insert them into the paper unless the user explicitly requests it.
 
 - [Full figure](isaacsim_results.pdf): third-person images, all 150 recorded
   trajectories, and repeated-trial outcomes with nominal 95% Wilson intervals.
@@ -91,7 +93,7 @@ benchmark configuration paths):
 To compile the paper-size proof, run `pdflatex -interaction=nonstopmode
 -halt-on-error paper_proof.tex` from this folder's `review/` directory.
 
-Only new figure assets and the caption are delivered to the paper repository:
-`fig/gear_isaacsim.pdf`, `fig/gear_isaacsim_row.pdf`, their editable SVGs, and
-`fig/gear_isaacsim_caption.tex`. The proposed placement is not inserted into the
-paper until the visual direction is reviewed.
+The five figure and caption files previously copied into the paper repository
+were removed at the user's request. No Isaac Sim draft assets remain in that
+repository. All editable masters, previews, evidence, and the optional placement
+snippet remain here for review; no figure was inserted into `main.tex`.
