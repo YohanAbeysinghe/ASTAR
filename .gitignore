@@ -211,9 +211,7 @@ tempCodeRunnerFile.py
 
 # ASTAR runtime artifacts
 checkpoints/**
-!checkpoints/README.md
 data/**
-!data/README.md
 outputs/
 wandb/
 logs/
