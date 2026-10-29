@@ -1,0 +1,32 @@
+{
+  "paper_assets": [
+    {
+      "source": "figs/isaacsim_results/isaacsim_results.pdf",
+      "paper_path": "fig/gear_isaacsim.pdf",
+      "sha256": "c27d063cc189853d88c4e3ca29ae1ce0a21e2c5f45f66ae5bcfddc5245e5ac26"
+    },
+    {
+      "source": "figs/isaacsim_results/isaacsim_results.svg",
+      "paper_path": "fig/gear_isaacsim.svg",
+      "sha256": "d48eccaf7976e1c656c17a105e9bf5adba1367dde6fbe7ea6ca2b6696e5aba0e"
+    },
+    {
+      "source": "figs/isaacsim_results/isaacsim_scene_strip.pdf",
+      "paper_path": "fig/gear_isaacsim_row.pdf",
+      "sha256": "95d690f481c36acc0c7867f302311b806a43869992faa5423f595743cf05bc93"
+    },
+    {
+      "source": "figs/isaacsim_results/isaacsim_scene_strip.svg",
+      "paper_path": "fig/gear_isaacsim_row.svg",
+      "sha256": "49814554c5c3a1917b05d2ac3fcac094f8ea4012e484285746473dc2f8e7a395"
+    },
+    {
+      "source": "figs/isaacsim_results/caption.tex",
+      "paper_path": "fig/gear_isaacsim_caption.tex",
+      "sha256": "fd1049bfaa4a0bf834b9fdf4364fbeb5fb7390935d13965a5cdcde41440f94e2"
+    }
+  ],
+  "main_tex_unchanged": true,
+  "realworld_pdf_unchanged": true,
+  "integration_status": "Separate review draft; no placement in main.tex."
+}

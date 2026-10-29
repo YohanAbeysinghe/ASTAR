@@ -1,0 +1,24 @@
+{
+  "metric_trials": 150,
+  "trajectory_count": 150,
+  "successes": 149,
+  "contact_trials": 1,
+  "realworld_pdf_sha256_unchanged": true,
+  "all_trajectory_samples_in_plot_limits": true,
+  "outputs": {
+    "isaacsim_results.svg": "d48eccaf7976e1c656c17a105e9bf5adba1367dde6fbe7ea6ca2b6696e5aba0e",
+    "isaacsim_results.pdf": "c27d063cc189853d88c4e3ca29ae1ce0a21e2c5f45f66ae5bcfddc5245e5ac26",
+    "isaacsim_results.png": "0ed7de150dd6897e703d9303562a37521336ddd6eb15c03f447bc856900ff910",
+    "isaacsim_scene_strip.svg": "49814554c5c3a1917b05d2ac3fcac094f8ea4012e484285746473dc2f8e7a395",
+    "isaacsim_scene_strip.pdf": "95d690f481c36acc0c7867f302311b806a43869992faa5423f595743cf05bc93",
+    "isaacsim_scene_strip.png": "498fbf6df50eedc3e16afd6b57b753f3ef9a57dc9f84f8f4f0bf94f9de55ed22"
+  },
+  "wilson_intervals_crosschecked_with_scipy": true,
+  "unique_metric_trial_rows": 150,
+  "svg_measured_trajectory_groups": 150,
+  "svg_embedded_scene_images": 3,
+  "paper_proof_width_in": 7.12,
+  "paper_proof_compiled": true,
+  "paper_proof_pages": 1,
+  "latex_overfull_underfull_warnings": false
+}

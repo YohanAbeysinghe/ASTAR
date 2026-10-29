@@ -1,0 +1,11 @@
+{
+  "font_family": "STIXGeneral",
+  "ink": "#1A1A1A",
+  "muted": "#555555",
+  "path": "#F39A18",
+  "goal": "#FFC52F",
+  "contact": "#BA3B46",
+  "panel_fill": "#E6EFFD",
+  "panel_edge": "#7F9CC6",
+  "source": "Path color matches figs/realworld_paths/annotations.json; goal, panel, ink and muted colors match figs/figure_style.py."
+}
