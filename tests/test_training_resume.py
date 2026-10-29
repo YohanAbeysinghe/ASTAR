@@ -10,8 +10,8 @@ import numpy as np
 import optax
 import pytest
 
-import astar.training.aggregation as trainer
-from astar.training.replay import AggregationReplay
+import gear_nav.training.aggregation as trainer
+from gear_nav.training.replay import AggregationReplay
 
 
 class TinyField(nnx.Module):

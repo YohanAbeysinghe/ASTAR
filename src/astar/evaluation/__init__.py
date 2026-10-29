@@ -1,1 +1,0 @@
-"""ASTAR checkpoint evaluation components."""

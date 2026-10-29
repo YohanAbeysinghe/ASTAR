@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from astar import energy_checkpoints as checkpoints
+from gear_nav import energy_checkpoints as checkpoints
 
 
 def _mock_workers(monkeypatch, rank, visibility):

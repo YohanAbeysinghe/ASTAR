@@ -8,10 +8,10 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-import astar.evaluation.aggregation as evaluator
-import astar.training.aggregation as trainer
-from astar.training.monitoring import rollout_model_only
-from astar.training.steps import waypoint_step_sizes
+import gear_nav.evaluation.aggregation as evaluator
+import gear_nav.training.aggregation as trainer
+from gear_nav.training.monitoring import rollout_model_only
+from gear_nav.training.steps import waypoint_step_sizes
 
 
 @pytest.mark.parametrize("horizon", [2, 4, 16])

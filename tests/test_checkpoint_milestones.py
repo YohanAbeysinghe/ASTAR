@@ -1,8 +1,8 @@
 import os
 import shutil
 
-from astar.checkpoint_milestones import archive_milestone
-from astar.checkpoint_milestones import completed_milestones
+from gear_nav.checkpoint_milestones import archive_milestone
+from gear_nav.checkpoint_milestones import completed_milestones
 
 
 def _make_checkpoint(run_dir, step):

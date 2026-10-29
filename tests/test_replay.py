@@ -3,11 +3,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from astar.training.replay import AggregationReplay
-from astar.training.replay import ConvergenceConfig
-from astar.training.replay import ConvergenceTracker
-from astar.training.replay import deterministic_replay_slot
-from astar.training.replay import stable_config_signature
+from gear_nav.training.replay import AggregationReplay
+from gear_nav.training.replay import ConvergenceConfig
+from gear_nav.training.replay import ConvergenceTracker
+from gear_nav.training.replay import deterministic_replay_slot
+from gear_nav.training.replay import stable_config_signature
 
 
 def _paths(value: float = 0.0) -> np.ndarray:

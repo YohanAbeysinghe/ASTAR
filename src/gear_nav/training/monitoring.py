@@ -17,9 +17,9 @@ from jax.experimental import multihost_utils
 import jax.numpy as jnp
 import numpy as np
 
-from astar.training.steps import waypoint_step_sizes
-from astar.waypoint_energy import compute_obstacle_energy
-from astar.waypoint_energy import decode_bounded_waypoint_path
+from gear_nav.training.steps import waypoint_step_sizes
+from gear_nav.waypoint_energy import compute_obstacle_energy
+from gear_nav.waypoint_energy import decode_bounded_waypoint_path
 
 ENERGY_TERMS = (
     "collision",

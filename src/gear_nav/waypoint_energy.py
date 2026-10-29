@@ -13,11 +13,11 @@ import jax.numpy as jnp
 from openpi.models import model as _model
 from openpi.shared import array_typing as at
 
-from astar.esdf import robot_radius_per_path
-from astar.esdf import sample_batched_esdf_with_valid
-from astar.path_sampler import DynamicWaypointPriorConfig
-from astar.path_sampler import maybe_normalize_actions
-from astar.path_sampler import maybe_unnormalize_actions
+from gear_nav.esdf import robot_radius_per_path
+from gear_nav.esdf import sample_batched_esdf_with_valid
+from gear_nav.path_sampler import DynamicWaypointPriorConfig
+from gear_nav.path_sampler import maybe_normalize_actions
+from gear_nav.path_sampler import maybe_unnormalize_actions
 
 
 @dataclasses.dataclass(frozen=True)

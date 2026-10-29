@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=astar-eval
+#SBATCH --job-name=gear-nav-eval
 #SBATCH --output=slurm-%x-%j.out
 #SBATCH --gres=gpu:rtxa6000:4
 #SBATCH --account=gamma
@@ -13,7 +13,8 @@ set -euo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_ROOT}"
 
-: "${ASTAR_DATA_ROOT:?Set ASTAR_DATA_ROOT to the prepared dataset directory}"
+GEAR_NAV_DATA_ROOT="${GEAR_NAV_DATA_ROOT:-${ASTAR_DATA_ROOT:-}}"
+: "${GEAR_NAV_DATA_ROOT:?Set GEAR_NAV_DATA_ROOT (or legacy ASTAR_DATA_ROOT) to the prepared dataset directory}"
 : "${CHECKPOINT_ROOT:?Set CHECKPOINT_ROOT to an ASTAR experiment directory}"
 if [[ -x "${REPO_ROOT}/.venv/bin/astar-eval" ]]; then
   EVAL_COMMAND=("${REPO_ROOT}/.venv/bin/astar-eval")
@@ -35,7 +36,7 @@ export MPLCONFIGDIR="${MPLCONFIGDIR:-/tmp/astar_eval_mpl_${SLURM_JOB_ID}}"
 
 "${EVAL_COMMAND[@]}" \
   --checkpoint-root "${CHECKPOINT_ROOT}" \
-  --data-root "${ASTAR_DATA_ROOT}" \
+  --data-root "${GEAR_NAV_DATA_ROOT}" \
   --eval-split-ids "${REPO_ROOT}/configs/splits/eval_clip_ids.txt" \
   --steps "${CHECKPOINT_STEP_ARGS[@]}" \
   --modes "${MODE_ARGS[@]}" \

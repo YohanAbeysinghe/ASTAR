@@ -5,8 +5,8 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from astar.esdf import sample_batched_esdf
-from astar.esdf import sample_batched_esdf_with_valid
+from gear_nav.esdf import sample_batched_esdf
+from gear_nav.esdf import sample_batched_esdf_with_valid
 
 
 def test_final_interpolation_cells_preserve_bilinear_values_and_gradients():

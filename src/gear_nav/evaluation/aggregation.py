@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate a pi0.5 energy-aggregation checkpoint on held-out ASTAR clips.
+"""Evaluate a pi0.5 energy-aggregation checkpoint on held-out GEAR-Nav clips.
 
 The evaluator deliberately separates learned-policy performance from the
 oracle-assisted rollout used by the aggregation trainer:
@@ -44,28 +44,28 @@ from openpi.shared import array_typing as at
 import openpi.training.sharding as sharding
 import orbax.checkpoint as ocp
 
-from astar.dataloader import OPENPI_IMAGE_SIZE
-from astar.dataloader import GoalModalityConfig
-from astar.path_sampler import DynamicWaypointPriorConfig
-from astar.path_sampler import maybe_unnormalize_actions
-from astar.training.aggregation import OracleOnlyNavigationDataLoader
-from astar.training.aggregation import OracleOnlyNavigationDataset
-from astar.training.aggregation import _cap_direction_rms
-from astar.training.aggregation import _rms_per_path
-from astar.training.aggregation import backtracking_projected_step
-from astar.training.aggregation import initialize_prior_paths
-from astar.training.aggregation import predict_descent_field
-from astar.training.aggregation import project_bounded_actions
-from astar.training.aggregation import query_energy_oracle
-from astar.training.aggregation import sanitize_metric_tensors
-from astar.training.monitoring import esdf_display_scale
-from astar.training.steps import waypoint_step_sizes
-from astar.training_common import create_train_config
-from astar.training_common import init_logging
-from astar.training_common import init_train_state
-from astar.waypoint_energy import ObstacleEnergyConfig
-from astar.waypoint_energy import compute_obstacle_energy
-from astar.waypoint_energy import decode_bounded_waypoint_path
+from gear_nav.dataloader import OPENPI_IMAGE_SIZE
+from gear_nav.dataloader import GoalModalityConfig
+from gear_nav.path_sampler import DynamicWaypointPriorConfig
+from gear_nav.path_sampler import maybe_unnormalize_actions
+from gear_nav.training.aggregation import OracleOnlyNavigationDataLoader
+from gear_nav.training.aggregation import OracleOnlyNavigationDataset
+from gear_nav.training.aggregation import _cap_direction_rms
+from gear_nav.training.aggregation import _rms_per_path
+from gear_nav.training.aggregation import backtracking_projected_step
+from gear_nav.training.aggregation import initialize_prior_paths
+from gear_nav.training.aggregation import predict_descent_field
+from gear_nav.training.aggregation import project_bounded_actions
+from gear_nav.training.aggregation import query_energy_oracle
+from gear_nav.training.aggregation import sanitize_metric_tensors
+from gear_nav.training.monitoring import esdf_display_scale
+from gear_nav.training.steps import waypoint_step_sizes
+from gear_nav.training_common import create_train_config
+from gear_nav.training_common import init_logging
+from gear_nav.training_common import init_train_state
+from gear_nav.waypoint_energy import ObstacleEnergyConfig
+from gear_nav.waypoint_energy import compute_obstacle_energy
+from gear_nav.waypoint_energy import decode_bounded_waypoint_path
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
@@ -309,7 +309,7 @@ def validate_held_out_split(
 
 
 def load_training_config(path: Path) -> dict[str, Any]:
-    """Read ASTAR's flat JSON or W&B's wrapped YAML configuration."""
+    """Read GEAR-Nav's flat JSON or W&B's wrapped YAML configuration."""
     with path.open("r", encoding="utf-8") as handle:
         if path.suffix.lower() == ".json":
             raw = json.load(handle)

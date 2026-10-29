@@ -1,6 +1,6 @@
 """Train an autonomous pi0.5 waypoint field with energy-oracle aggregation.
 
-This is an ASTAR adaptation of ``ScalarFlows/train_aggregation.py``. It never
+This is a GEAR-Nav adaptation of ``ScalarFlows/train_aggregation.py``. It never
 constructs a flow-matching interpolation from a dataset trajectory:
 
 1. create a fixed pool of observations and goal-biased unicycle paths ``x_0``;
@@ -52,49 +52,49 @@ import optax
 import tqdm_loggable.auto as tqdm
 import wandb
 
-from astar.dataloader import DEFAULT_OBJECT_IMAGE_GOAL_PROB
-from astar.dataloader import DEFAULT_OBJECT_TEXT_GOAL_PROB
-from astar.dataloader import DEFAULT_OBJECT_WAYPOINT_GOAL_PROB
-from astar.dataloader import DEFAULT_SAMPLED_GOAL_FRACTION
-from astar.dataloader import OPENPI_IMAGE_SIZE
-from astar.dataloader import AstarNavigationDataLoader
-from astar.dataloader import AstarNavigationDataset
-from astar.dataloader import GoalModalityConfig
-from astar.energy_checkpoints import initialize_bounded_checkpoint_dir
-from astar.energy_checkpoints import prune_auxiliary_checkpoints
-from astar.energy_checkpoints import save_trainable_params_checkpoint
-from astar.path_sampler import DynamicWaypointPriorConfig
-from astar.path_sampler import maybe_normalize_actions
-from astar.path_sampler import maybe_unnormalize_actions
-from astar.path_sampler import sample_dynamic_waypoint_prior
-from astar.training.monitoring import ENERGY_TERMS
-from astar.training.monitoring import VALIDATION_METRICS
-from astar.training.monitoring import cache_validation_pool
-from astar.training.monitoring import esdf_display_scale
-from astar.training.monitoring import evaluate_validation_pool
-from astar.training.monitoring import host_numpy
-from astar.training.monitoring import learning_metrics
-from astar.training.monitoring import rollout_model_only
-from astar.training.monitoring import round_wandb_metrics
-from astar.training.monitoring import score_validation_paths
-from astar.training.replay import AggregationReplay
-from astar.training.replay import BenefitTracker
-from astar.training.replay import ConvergenceConfig
-from astar.training.replay import ConvergenceTracker
-from astar.training.replay import deterministic_replay_slot
-from astar.training.replay import stable_config_signature
-from astar.training.steps import waypoint_step_sizes
-from astar.training_common import ACTION_STACK_PRETRAIN_SKIP_PATTERNS
-from astar.training_common import PI05_BASE_PARAMS
-from astar.training_common import create_train_config
-from astar.training_common import init_logging
-from astar.training_common import init_train_state
-from astar.waypoint_energy import ObstacleEnergyConfig
-from astar.waypoint_energy import _repeat_batch_tree
-from astar.waypoint_energy import bias_prior_toward_goal
-from astar.waypoint_energy import compute_obstacle_energy
-from astar.waypoint_energy import compute_particle_path_diversity
-from astar.waypoint_energy import decode_bounded_waypoint_path
+from gear_nav.dataloader import DEFAULT_OBJECT_IMAGE_GOAL_PROB
+from gear_nav.dataloader import DEFAULT_OBJECT_TEXT_GOAL_PROB
+from gear_nav.dataloader import DEFAULT_OBJECT_WAYPOINT_GOAL_PROB
+from gear_nav.dataloader import DEFAULT_SAMPLED_GOAL_FRACTION
+from gear_nav.dataloader import OPENPI_IMAGE_SIZE
+from gear_nav.dataloader import AstarNavigationDataLoader
+from gear_nav.dataloader import AstarNavigationDataset
+from gear_nav.dataloader import GoalModalityConfig
+from gear_nav.energy_checkpoints import initialize_bounded_checkpoint_dir
+from gear_nav.energy_checkpoints import prune_auxiliary_checkpoints
+from gear_nav.energy_checkpoints import save_trainable_params_checkpoint
+from gear_nav.path_sampler import DynamicWaypointPriorConfig
+from gear_nav.path_sampler import maybe_normalize_actions
+from gear_nav.path_sampler import maybe_unnormalize_actions
+from gear_nav.path_sampler import sample_dynamic_waypoint_prior
+from gear_nav.training.monitoring import ENERGY_TERMS
+from gear_nav.training.monitoring import VALIDATION_METRICS
+from gear_nav.training.monitoring import cache_validation_pool
+from gear_nav.training.monitoring import esdf_display_scale
+from gear_nav.training.monitoring import evaluate_validation_pool
+from gear_nav.training.monitoring import host_numpy
+from gear_nav.training.monitoring import learning_metrics
+from gear_nav.training.monitoring import rollout_model_only
+from gear_nav.training.monitoring import round_wandb_metrics
+from gear_nav.training.monitoring import score_validation_paths
+from gear_nav.training.replay import AggregationReplay
+from gear_nav.training.replay import BenefitTracker
+from gear_nav.training.replay import ConvergenceConfig
+from gear_nav.training.replay import ConvergenceTracker
+from gear_nav.training.replay import deterministic_replay_slot
+from gear_nav.training.replay import stable_config_signature
+from gear_nav.training.steps import waypoint_step_sizes
+from gear_nav.training_common import ACTION_STACK_PRETRAIN_SKIP_PATTERNS
+from gear_nav.training_common import PI05_BASE_PARAMS
+from gear_nav.training_common import create_train_config
+from gear_nav.training_common import init_logging
+from gear_nav.training_common import init_train_state
+from gear_nav.waypoint_energy import ObstacleEnergyConfig
+from gear_nav.waypoint_energy import _repeat_batch_tree
+from gear_nav.waypoint_energy import bias_prior_toward_goal
+from gear_nav.waypoint_energy import compute_obstacle_energy
+from gear_nav.waypoint_energy import compute_particle_path_diversity
+from gear_nav.waypoint_energy import decode_bounded_waypoint_path
 
 GROUND_TRUTH_METRIC_KEYS = frozenset(
     {"actions_vw", "path_xy", "path_xytheta", "path_step_mask"}
@@ -132,7 +132,7 @@ AGGREGATION_ALGORITHM_VERSION = 7
 class OracleOnlyNavigationDataset(AstarNavigationDataset):
     """Navigation view that never requires or loads a planned trajectory.
 
-    The shared ASTAR loader is path-supervised by construction.  This isolated
+    The shared GEAR-Nav loader is path-supervised by construction.  This isolated
     view retains only the image, goal and ESDF inputs needed by the energy
     oracle, while providing zero placeholders to the legacy OpenPI adapter.
     Those placeholders are discarded before the condition pool is cached.
@@ -1095,7 +1095,7 @@ def init_aggregation_wandb(
         return
     if not wandb.login():
         raise RuntimeError(
-            "W&B authentication failed. Run `wandb login` in the ASTAR environment "
+            "W&B authentication failed. Run `wandb login` in the GEAR-Nav environment "
             "or export WANDB_API_KEY before submitting."
         )
     if resuming and not (
@@ -1456,7 +1456,7 @@ def _validate_args(
     if args.action_horizon < 2:
         raise ValueError("--action-horizon must be at least 2.")
     if args.goal_waypoint_dim != 2:
-        raise ValueError("--goal-waypoint-dim must be 2 for the ASTAR goal projector.")
+        raise ValueError("--goal-waypoint-dim must be 2 for the GEAR-Nav goal projector.")
     if args.max_goal_waypoints != 1:
         raise ValueError("--max-goal-waypoints must be 1 for this dataset view.")
     if args.random_init_action_stack and args.train_scope == "adapter":
@@ -1645,7 +1645,7 @@ def _validate_args(
 
 def main(args: argparse.Namespace) -> None:
     init_logging()
-    logging.info("Running ASTAR energy-oracle aggregation on %s", platform.node())
+    logging.info("Running GEAR-Nav energy-oracle aggregation on %s", platform.node())
     primary = jax.process_index() == 0
     logging.info(
         "JAX process %d/%d: %d local devices, %d global devices",
@@ -2849,7 +2849,7 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
     if args.continue_aggregation_until_round:
         args.aggregation_rounds = args.continue_aggregation_until_round
-    # Compatibility fields required by shared ASTAR configuration/data classes;
+    # Compatibility fields required by shared GEAR-Nav configuration/data classes;
     # none changes this path-free aggregation algorithm.
     args.path_stride = 10
     args.max_increment_correction_m = 0.08

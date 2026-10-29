@@ -31,21 +31,21 @@ import optax
 import orbax.checkpoint as ocp
 import wandb
 
-from astar.energy_checkpoints import initialize_bounded_checkpoint_dir
-from astar.evaluation.aggregation import build_energy_config
-from astar.evaluation.aggregation import restore_checkpoint_params
-from astar.training import aggregation as agg
-from astar.training.continuation_data import FullPartitionBatches
-from astar.training.continuation_data import dataset_resume_metadata
-from astar.training.continuation_data import deterministic_batch_seed
-from astar.training.continuation_data import metadata_signature
-from astar.training.continuation_wandb import init_continuation_wandb
-from astar.training.monitoring import cache_validation_pool
-from astar.training.monitoring import evaluate_validation_pool
-from astar.training.monitoring import host_numpy
-from astar.training.monitoring import learning_metrics
-from astar.training.monitoring import rollout_model_only
-from astar.training.monitoring import score_validation_paths
+from gear_nav.energy_checkpoints import initialize_bounded_checkpoint_dir
+from gear_nav.evaluation.aggregation import build_energy_config
+from gear_nav.evaluation.aggregation import restore_checkpoint_params
+from gear_nav.training import aggregation as agg
+from gear_nav.training.continuation_data import FullPartitionBatches
+from gear_nav.training.continuation_data import dataset_resume_metadata
+from gear_nav.training.continuation_data import deterministic_batch_seed
+from gear_nav.training.continuation_data import metadata_signature
+from gear_nav.training.continuation_wandb import init_continuation_wandb
+from gear_nav.training.monitoring import cache_validation_pool
+from gear_nav.training.monitoring import evaluate_validation_pool
+from gear_nav.training.monitoring import host_numpy
+from gear_nav.training.monitoring import learning_metrics
+from gear_nav.training.monitoring import rollout_model_only
+from gear_nav.training.monitoring import score_validation_paths
 
 
 def restore_train_state(root, step, shape, state_sharding):

@@ -3,8 +3,8 @@ import argparse
 import numpy as np
 import pytest
 
-import astar.training.aggregation as trainer
-from astar.training.replay import AggregationReplay
+import gear_nav.training.aggregation as trainer
+from gear_nav.training.replay import AggregationReplay
 
 
 def test_cap_migration_rejects_unrelated_training_changes(monkeypatch):

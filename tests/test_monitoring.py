@@ -7,13 +7,13 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-import astar.training.aggregation as trainer
-import astar.training.monitoring as monitoring
-from astar.training.replay import AggregationReplay
-from astar.training.replay import BenefitTracker
-from astar.training.replay import ConvergenceConfig
-from astar.training.replay import ConvergenceTracker
-from astar.waypoint_energy import ObstacleEnergyConfig
+import gear_nav.training.aggregation as trainer
+import gear_nav.training.monitoring as monitoring
+from gear_nav.training.replay import AggregationReplay
+from gear_nav.training.replay import BenefitTracker
+from gear_nav.training.replay import ConvergenceConfig
+from gear_nav.training.replay import ConvergenceTracker
+from gear_nav.waypoint_energy import ObstacleEnergyConfig
 
 
 def metrics_fixture(batch=2):

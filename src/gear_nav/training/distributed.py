@@ -16,7 +16,7 @@ def main():
     )
     # Initialize before importing the trainer or creating any JAX arrays.
     jax.distributed.initialize(
-        coordinator_address=os.environ["ASTAR_JAX_COORDINATOR"],
+        coordinator_address=os.environ.get("GEAR_NAV_JAX_COORDINATOR") or os.environ["ASTAR_JAX_COORDINATOR"],
         num_processes=int(os.environ["SLURM_NTASKS"]),
         process_id=int(os.environ["SLURM_PROCID"]),
         local_device_ids=list(range(8)),
@@ -34,7 +34,7 @@ def main():
         f"local={jax.local_devices()}, global_count={jax.device_count()}",
         flush=True,
     )
-    from astar.training.aggregation import cli
+    from gear_nav.training.aggregation import cli
 
     cli()
     jax.distributed.shutdown()

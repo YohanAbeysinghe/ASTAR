@@ -1,8 +1,8 @@
-# ASTAR
+# GEAR-Nav
 
-**Action-Label-Free Spatial Trajectory Aggregation and Refinement**
+**Geometry-guided trajectory refinement for navigation**
 
-ASTAR is a vision-language navigation research stack that teaches a
+GEAR-Nav is a vision-language navigation research stack that teaches a
 pi0.5-based policy to iteratively improve local robot trajectories without
 using recorded robot actions or reference paths as training targets.
 
@@ -10,7 +10,7 @@ The central idea is to use geometry as a teacher during training, not as a
 required policy input at deployment. A Euclidean signed-distance field
 (ESDF), a goal location, and robot geometry define a differentiable trajectory
 energy. Its projected negative gradient says how a candidate waypoint path
-should change to become safer, smoother, and more goal-directed. ASTAR trains
+should change to become safer, smoother, and more goal-directed. GEAR-Nav trains
 pi0.5 to predict that local refinement direction from the robot observation,
 the selected goal modality, and the current candidate path.
 
@@ -18,8 +18,15 @@ At inference time, the learned field can repeatedly refine a dynamically
 feasible waypoint prior. The model itself does not consume an ESDF, a map, an
 A* path, or a demonstrated action sequence.
 
-> **In one sentence:** ASTAR distills a map-based geometric optimizer into a
+> **In one sentence:** GEAR-Nav distills a map-based geometric optimizer into a
 > vision-language trajectory-refinement policy.
+
+> **Naming and compatibility:** GEAR-Nav was previously called ASTAR. The Python package is `gear_nav`; the legacy `astar` package path and CLI commands remain available for existing scripts and checkpoints. `GEAR_NAV_DATA_ROOT` is preferred, with `ASTAR_DATA_ROOT` supported as a fallback. Historical checkpoint directories and experiment links retain their original names.
+
+The workspace on the original machine also has an `ASTAR` symlink pointing to
+`GEAR-Nav`. This machine-local link is not created by cloning the repository.
+Use one Python import spelling consistently within a process: loading the same
+module through both package names creates separate Python module objects.
 
 ## What this project is trying to achieve
 
@@ -34,7 +41,7 @@ three practical problems:
 3. behavior-cloned policies receive weak supervision on the off-demonstration
    states they encounter after making their own mistakes.
 
-ASTAR replaces action imitation with **trajectory improvement learning**. It
+GEAR-Nav replaces action imitation with **trajectory improvement learning**. It
 starts from candidate local paths, asks a differentiable geometric objective
 how each path should improve, trains a neural field on those directions, and
 then uses the learned field to generate the next set of states. Repeating this
@@ -49,7 +56,7 @@ The intended result is a policy that can:
 - refine its own candidate paths over multiple iterations; and
 - run without the training-time ESDF being passed through the model.
 
-ASTAR is not a replacement for the low-level controller. It predicts a local
+GEAR-Nav is not a replacement for the low-level controller. It predicts a local
 metric path; a path manager and controller are still responsible for turning
 that path into robot velocity commands.
 
@@ -150,7 +157,7 @@ control sequence or planned path.
 
 ## The trajectory objective
 
-For a candidate path `p`, ASTAR minimizes the weighted objective
+For a candidate path `p`, GEAR-Nav minimizes the weighted objective
 
 ```text
 E(p) = lambda_clear * E_clearance
@@ -185,7 +192,7 @@ energy.
 
 ### Goal progress
 
-ASTAR does not supervise only the endpoint. Every future waypoint receives a
+GEAR-Nav does not supervise only the endpoint. Every future waypoint receives a
 linearly increasing goal-progress weight, from `1 / 15` at the first future
 waypoint to `1` at the endpoint. This supplies a dense forward signal across
 the complete path.
@@ -250,7 +257,7 @@ cached oracle labels, convergence state, and validation history.
 
 ### Full-partition continuation
 
-`astar.training.continuation` supports a second training phase after a fixed
+`gear_nav.training.continuation` supports a second training phase after a fixed
 aggregation depth has been learned. A frozen source checkpoint rolls each new
 training example to a reproducibly sampled depth, the analytic oracle labels
 that state, and only the student is updated. This exposes the student to the
@@ -259,7 +266,7 @@ letting the teacher depth drift during continuation.
 
 ## Goal conditioning
 
-ASTAR supports two goal families:
+GEAR-Nav supports two goal families:
 
 - **Object goals** can expose language, an object crop, a metric waypoint, or
   any independently sampled combination of those inputs.
@@ -297,8 +304,8 @@ that geometric guard.
 ## Repository layout
 
 ```text
-ASTAR/
-├── src/astar/
+GEAR-Nav/
+├── src/gear_nav/
 │   ├── adapters/              # metric-goal to prefix-token projector
 │   ├── heads/                 # pi0.5 waypoint action adapter
 │   ├── training/              # aggregation, replay, continuation, monitoring
@@ -331,13 +338,13 @@ evaluation implementation, not an all-inclusive artifact release.
 
 ## Installation
 
-ASTAR requires Linux, Python 3.11, and an NVIDIA GPU for realistic training.
+GEAR-Nav requires Linux, Python 3.11, and an NVIDIA GPU for realistic training.
 Install [`uv`](https://docs.astral.sh/uv/), clone the repository, and initialize
 the OpenPI submodule:
 
 ```bash
-git clone https://github.com/YohanAbeysinghe/ASTAR.git
-cd ASTAR
+git clone https://github.com/YohanAbeysinghe/ASTAR.git GEAR-Nav
+cd GEAR-Nav
 git submodule update --init --recursive third_party/openpi
 GIT_LFS_SKIP_SMUDGE=1 uv sync --extra dev
 ```
@@ -354,7 +361,7 @@ a324ec445007031ed5b11d708ad764406b1f55ee
 ```
 
 Do not silently replace this revision with OpenPI `main` when reproducing a
-run; ASTAR relies on the goal and waypoint adapter interfaces in the pinned
+run; GEAR-Nav relies on the goal and waypoint adapter interfaces in the pinned
 fork.
 
 ### Download pi0.5 parameters
@@ -362,7 +369,7 @@ fork.
 The roughly 12 GB pi0.5 base checkpoint is an external artifact:
 
 ```bash
-uv run astar-download-pi05
+uv run gear-nav-download-pi05
 ```
 
 This downloads:
@@ -384,7 +391,7 @@ The default is a symlink to the OpenPI cache, avoiding a duplicate copy. Set
 Verify the environment and checkpoint with:
 
 ```bash
-uv run astar-verify --require-checkpoint
+uv run gear-nav-verify --require-checkpoint
 ```
 
 ## Dataset
@@ -392,7 +399,7 @@ uv run astar-verify --require-checkpoint
 The dataset is external to Git. Set its root explicitly:
 
 ```bash
-export ASTAR_DATA_ROOT=/absolute/path/to/dataset
+export GEAR_NAV_DATA_ROOT=/absolute/path/to/dataset
 ```
 
 The root contains a dataset manifest, a JSONL sample index, RGB images, ESDF
@@ -437,14 +444,14 @@ The primary launcher targets two nodes with eight RTX A5000 GPUs per node, one
 JAX controller per node, and eight-way FSDP within each node:
 
 ```bash
-ASTAR_DATA_ROOT=/absolute/path/to/dataset \
+GEAR_NAV_DATA_ROOT=/absolute/path/to/dataset \
   sbatch slurm/train_2node_16gpu.sbatch
 ```
 
 Give every clean experiment a new name:
 
 ```bash
-ASTAR_DATA_ROOT=/absolute/path/to/dataset \
+GEAR_NAV_DATA_ROOT=/absolute/path/to/dataset \
 EXP_NAME=astar_clean_v1 \
   sbatch slurm/train_2node_16gpu.sbatch
 ```
@@ -452,7 +459,7 @@ EXP_NAME=astar_clean_v1 \
 For one node with four RTX A6000 GPUs:
 
 ```bash
-ASTAR_DATA_ROOT=/absolute/path/to/dataset \
+GEAR_NAV_DATA_ROOT=/absolute/path/to/dataset \
 EXP_NAME=astar_a6000_v1 \
   sbatch slurm/train_1node_4gpu_a6000.sbatch
 ```
@@ -460,7 +467,7 @@ EXP_NAME=astar_a6000_v1 \
 Inspect the complete direct CLI before constructing a custom run:
 
 ```bash
-uv run astar-train --help
+uv run gear-nav-train --help
 ```
 
 The canonical jobs use a global batch size of 16, 64 aggregation batches,
@@ -506,7 +513,7 @@ W&B is opt-in in the Slurm launchers:
 WANDB_ENABLED=1 \
 WANDB_ENTITY=<entity> \
 WANDB_PROJECT=astar \
-ASTAR_DATA_ROOT=/absolute/path/to/dataset \
+GEAR_NAV_DATA_ROOT=/absolute/path/to/dataset \
   sbatch slurm/train_2node_16gpu.sbatch
 ```
 
@@ -519,9 +526,9 @@ depth, training diagnostics, model-only validation metrics, and path plots.
 Evaluate a completed experiment with:
 
 ```bash
-uv run astar-eval \
+uv run gear-nav-eval \
   --checkpoint-root checkpoints/astar_pi05_energy_aggregation/astar_clean_v1 \
-  --data-root "$ASTAR_DATA_ROOT" \
+  --data-root "$GEAR_NAV_DATA_ROOT" \
   --eval-split-ids configs/splits/eval_clip_ids.txt \
   --steps <checkpoint-step>
 ```
@@ -529,7 +536,7 @@ uv run astar-eval \
 Or use the four-GPU Slurm launcher:
 
 ```bash
-ASTAR_DATA_ROOT=/absolute/path/to/dataset \
+GEAR_NAV_DATA_ROOT=/absolute/path/to/dataset \
 CHECKPOINT_ROOT=/absolute/path/to/experiment \
 CHECKPOINT_STEPS="30000" \
   sbatch slurm/evaluate.sbatch
@@ -586,7 +593,7 @@ deployment checkpoints. This working checkout may additionally contain:
   diagnostic for step 57,500 at refinement depth 14;
 - `SimResults/astar_57500_oracle_goal_100/` — a resumable extension and video
   export workflow;
-- `deployment/` — a laptop ROS2 bundle that serves ASTAR and preserves the
+- `deployment/` — a laptop ROS2 bundle that serves GEAR-Nav and preserves the
   NavigationStack `/path` interface; and
 - `eval/` — generated offline path plots and summaries.
 
@@ -615,7 +622,7 @@ For robot deployment, the optional ROS2 path is:
 camera + odometry + goal
           |
           v
-ASTAR inference server / model node
+GEAR-Nav inference server / model node
           |
           v
      /path (nav_msgs/Path)
@@ -646,7 +653,7 @@ simulated JAX controllers on CPU but is more expensive than the unit tests.
 For a lightweight installation check before allocating GPUs:
 
 ```bash
-uv run astar-verify
+uv run gear-nav-verify
 ```
 
 ## Reproducibility and interpretation
@@ -656,7 +663,7 @@ goal-modality counts, JAX topology, energy configuration, and aggregation
 algorithm version. Evaluation additionally records Git/source hashes, split
 hashes, checkpoint source, deterministic sample selection, and scorer settings.
 
-When reporting an ASTAR result, include at least:
+When reporting a GEAR-Nav result, include at least:
 
 - checkpoint step and raw/EMA parameter source;
 - aggregation or rollout depth;
@@ -679,13 +686,13 @@ This avoids three common misinterpretations:
 
 | Command | Purpose |
 | --- | --- |
-| `astar-train` | single-process/multi-GPU energy aggregation |
-| `astar-train-distributed` | initialize JAX across multiple Slurm nodes, then train |
-| `astar-eval` | held-out prior/model/guarded/oracle evaluation |
-| `astar-download-pi05` | fetch and validate the base pi0.5 parameters |
-| `astar-verify` | verify imports, devices, and optionally the checkpoint |
+| `gear-nav-train` | single-process/multi-GPU energy aggregation |
+| `gear-nav-train-distributed` | initialize JAX across multiple Slurm nodes, then train |
+| `gear-nav-eval` | held-out prior/model/guarded/oracle evaluation |
+| `gear-nav-download-pi05` | fetch and validate the base pi0.5 parameters |
+| `gear-nav-verify` | verify imports, devices, and optionally the checkpoint |
 
-Additional utilities under `src/astar/` archive checkpoint milestones, render
+Additional utilities under `src/gear_nav/` archive checkpoint milestones, render
 multistep path evolution, and continue a fixed-depth teacher on the complete
 training partition.
 
@@ -706,6 +713,6 @@ training partition.
 
 ## License
 
-ASTAR is released under the MIT License. The OpenPI submodule, pi0.5 model
+GEAR-Nav is released under the MIT License. The OpenPI submodule, pi0.5 model
 artifacts, datasets, simulator assets, and optional deployment dependencies
 retain their own upstream licenses and terms.

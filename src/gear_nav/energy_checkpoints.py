@@ -1,4 +1,4 @@
-"""Checkpoint helpers shared by ASTAR energy training entry points."""
+"""Checkpoint helpers shared by GEAR-Nav energy training entry points."""
 
 from __future__ import annotations
 

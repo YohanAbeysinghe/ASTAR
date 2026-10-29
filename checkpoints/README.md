@@ -8,7 +8,7 @@ Install the official Physical Intelligence pi0.5 base parameters with:
 uv run astar-download-pi05
 ```
 
-ASTAR downloads `gs://openpi-assets/checkpoints/pi05_base/params` through
+GEAR-Nav downloads `gs://openpi-assets/checkpoints/pi05_base/params` through
 OpenPI's downloader and creates this local layout:
 
 ```text
@@ -26,7 +26,7 @@ Training outputs are written under:
 checkpoints/astar_pi05_energy_aggregation/<experiment-name>/
 ```
 
-ASTAR retains the latest committed full checkpoint plus every 10,000-step
+GEAR-Nav retains the latest committed full checkpoint plus every 10,000-step
 milestone and their matching replay/archive states. A trainable-parameter-only
 export may also be written at the final step. The pi0.5 base checkpoint is
 immutable and never used as an output path.

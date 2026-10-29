@@ -13,8 +13,8 @@ from openpi.training import utils as training_utils
 import optax
 import pytest
 
-from astar.training import continuation as trainer
-from astar.waypoint_energy import ObstacleEnergyConfig
+from gear_nav.training import continuation as trainer
+from gear_nav.waypoint_energy import ObstacleEnergyConfig
 
 
 class TinyField(nnx.Module):

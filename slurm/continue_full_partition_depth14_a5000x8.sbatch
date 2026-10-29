@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=astar-full-d14-a5k8
+#SBATCH --job-name=gear-nav-full-d14-a5k8
 #SBATCH --output=slurm-%x-%j.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1

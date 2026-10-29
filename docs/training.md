@@ -2,7 +2,7 @@
 
 ## Fresh run
 
-A clean run loads `checkpoints/pi05_base/params`, initializes ASTAR's action
+A clean run loads `checkpoints/pi05_base/params`, initializes GEAR-Nav's action
 and goal adapters, and creates a new experiment directory. Do not pass
 `--resume`, `--relabel-*`, or `--migrate-*` to a fresh run.
 
@@ -34,10 +34,10 @@ the 1,024 example pool size, the ESDF cutoff, and the forced round target.
 ## Resume
 
 Pass `--resume` only with the same experiment name and resume-critical
-configuration. ASTAR restores the latest committed model, optimizer, and
+configuration. GEAR-Nav restores the latest committed model, optimizer, and
 matching aggregation replay. Objective or conditioning migrations are guarded
 by explicit flags in the trainer and should not be used for the first clean
-ASTAR experiment.
+GEAR-Nav experiment.
 
 ## Checkpoint retention
 

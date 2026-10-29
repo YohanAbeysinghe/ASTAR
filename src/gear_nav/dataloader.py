@@ -1,4 +1,4 @@
-"""ASTAR navigation dataset and batching utilities.
+"""GEAR-Nav navigation dataset and batching utilities.
 
 The data-generation pipeline writes one JSONL row per video frame. Each row can
 contain several object goals and several sampled free-space goals; each goal
@@ -12,7 +12,7 @@ This module keeps the base dataset close to those semantics:
 * the object bbox crop is exposed as a goal image, not as a fake robot camera.
 
 An optional OpenPI output mode is kept for current training experiments, but it
-is deliberately an adapter layer over the ASTAR sample format.
+is deliberately an adapter layer over the GEAR-Nav sample format.
 """
 
 from __future__ import annotations
@@ -132,7 +132,7 @@ class AstarNavigationDataset:
         self._samples_handle = None
 
         if not self._index:
-            raise ValueError("No usable ASTAR goals were found for the requested split.")
+            raise ValueError("No usable GEAR-Nav goals were found for the requested split.")
 
     def __len__(self) -> int:
         return len(self._index)
@@ -218,7 +218,7 @@ class AstarNavigationDataset:
 
     def _resolve_samples_path(self, manifest_path: Path) -> tuple[Path, dict[str, Any] | None]:
         if not manifest_path.exists():
-            raise FileNotFoundError(f"ASTAR manifest not found: {manifest_path}")
+            raise FileNotFoundError(f"GEAR-Nav manifest not found: {manifest_path}")
 
         try:
             with manifest_path.open("r", encoding="utf-8") as handle:
@@ -258,14 +258,14 @@ class AstarNavigationDataset:
                 candidate = self.data_root / candidate
             candidate = candidate.resolve()
             if not candidate.exists():
-                raise FileNotFoundError(f"ASTAR split IDs file not found: {candidate}")
+                raise FileNotFoundError(f"GEAR-Nav split IDs file not found: {candidate}")
             return candidate
 
         candidate = self.data_root / "splits" / f"{split}_clip_ids.txt"
         if candidate.exists():
             return candidate.resolve()
         raise FileNotFoundError(
-            "ASTAR split IDs file is required for split "
+            "GEAR-Nav split IDs file is required for split "
             f"{split!r}. Pass split_ids_path or create {candidate}."
         )
 
@@ -280,7 +280,7 @@ class AstarNavigationDataset:
                     continue
                 split_ids.add(value)
         if not split_ids:
-            raise ValueError(f"ASTAR split IDs file is empty: {split_ids_path}")
+            raise ValueError(f"GEAR-Nav split IDs file is empty: {split_ids_path}")
         return split_ids
 
     def _build_index(self) -> list[GoalReference]:
@@ -783,7 +783,7 @@ def create_navigation_data_loader(
 ) -> AstarNavigationDataLoader:
     """Factory for the current training scripts.
 
-    ``output_format="openpi"`` adapts the ASTAR sample to OpenPI's current
+    ``output_format="openpi"`` adapts the GEAR-Nav sample to OpenPI's current
     observation tuple. The underlying dataset still indexes all goals and loads
     the full ESDF.
     """
@@ -794,7 +794,7 @@ def create_navigation_data_loader(
         goal_image_size = goal_image_size or OPENPI_IMAGE_SIZE
 
     dataset = AstarNavigationDataset(
-        data_root=Path(data_root or os.environ.get("ASTAR_DATA_ROOT", DEFAULT_DATA_ROOT)),
+        data_root=Path(data_root or os.environ.get("GEAR_NAV_DATA_ROOT", os.environ.get("ASTAR_DATA_ROOT", DEFAULT_DATA_ROOT))),
         manifest_path=Path(manifest_path).expanduser().resolve() if manifest_path else None,
         split=split,
         split_ids_path=Path(split_ids_path).expanduser() if split_ids_path else None,
@@ -932,7 +932,7 @@ def _import_openpi_modules():
         import openpi.training.config as _config
     except ImportError as exc:
         raise ImportError(
-            "OpenPI output requires OpenPI to be installed. Run the ASTAR environment "
+            "OpenPI output requires OpenPI to be installed. Run the GEAR-Nav environment "
             "setup so the local third_party/openpi package is available."
         ) from exc
     return _model, _config, _tokenizer

@@ -1,4 +1,4 @@
-"""Shared helpers for ASTAR pi0.5 navigation training scripts."""
+"""Shared helpers for GEAR-Nav pi0.5 navigation training scripts."""
 
 from __future__ import annotations
 
@@ -23,24 +23,24 @@ import openpi.training.utils as training_utils
 import openpi.training.weight_loaders as _weight_loaders
 import wandb
 
-from astar.adapters import waypoint_goal_projector_factory
-from astar.dataloader import create_navigation_data_loader as _create_astar_navigation_data_loader
-from astar.esdf import robot_radius_per_path
-from astar.esdf import sample_batched_esdf as sample_batched_esdf
-from astar.esdf import sample_batched_esdf_with_valid as sample_batched_esdf_with_valid
-from astar.heads import pi05_waypoint_action_adapter_factory
-from astar.path_sampler import maybe_unnormalize_actions
+from gear_nav.adapters import waypoint_goal_projector_factory
+from gear_nav.dataloader import create_navigation_data_loader as _create_astar_navigation_data_loader
+from gear_nav.esdf import robot_radius_per_path
+from gear_nav.esdf import sample_batched_esdf as sample_batched_esdf
+from gear_nav.esdf import sample_batched_esdf_with_valid as sample_batched_esdf_with_valid
+from gear_nav.heads import pi05_waypoint_action_adapter_factory
+from gear_nav.path_sampler import maybe_unnormalize_actions
 
 PI05_BASE_PARAMS = "./checkpoints/pi05_base/params"
 
 
 def create_navigation_data_loader(config: _config.TrainConfig, **kwargs):
-    """Create an ASTAR navigation loader used by flow and energy training."""
+    """Create a GEAR-Nav navigation loader used by flow and energy training."""
     return _create_astar_navigation_data_loader(config, **kwargs)
 
 
 def navigation_loader_kwargs(args: argparse.Namespace, data_sharding) -> dict[str, object]:
-    """Shared CLI-to-dataloader wiring for the ASTAR navigation scripts."""
+    """Shared CLI-to-dataloader wiring for the GEAR-Nav navigation scripts."""
     kwargs = {
         "data_root": args.data_root,
         "manifest_path": args.manifest_path,
@@ -76,7 +76,7 @@ def init_logging() -> None:
 
 
 def freeze_filter(train_scope: str) -> nnx.filterlib.Filter:
-    """Build the freeze filter for common ASTAR fine-tuning scopes."""
+    """Build the freeze filter for common GEAR-Nav fine-tuning scopes."""
     match train_scope:
         case "all":
             return nnx.Nothing

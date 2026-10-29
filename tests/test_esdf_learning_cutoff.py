@@ -7,10 +7,10 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-import astar.training.aggregation as trainer
-from astar.training.replay import AggregationReplay
-from astar.waypoint_energy import ObstacleEnergyConfig
-from astar.waypoint_energy import compute_obstacle_energy
+import gear_nav.training.aggregation as trainer
+from gear_nav.training.replay import AggregationReplay
+from gear_nav.waypoint_energy import ObstacleEnergyConfig
+from gear_nav.waypoint_energy import compute_obstacle_energy
 
 
 def fixture():

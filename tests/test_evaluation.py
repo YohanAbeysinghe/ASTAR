@@ -10,7 +10,7 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-import astar.evaluation.aggregation as evaluator
+import gear_nav.evaluation.aggregation as evaluator
 
 
 def _identity(

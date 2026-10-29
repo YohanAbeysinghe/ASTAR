@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=astar-ckpt-watch
+#SBATCH --job-name=gear-nav-ckpt-watch
 #SBATCH --output=slurm-%x-%j.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1

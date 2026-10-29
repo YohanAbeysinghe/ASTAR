@@ -127,7 +127,7 @@ def infer_paths(args: argparse.Namespace) -> None:
     import jax
     from openpi.training import sharding
 
-    from astar.evaluation import aggregation as agg
+    from gear_nav.evaluation import aggregation as agg
 
     checkpoint_root = args.checkpoint_root.resolve()
     training_config = (args.training_config or checkpoint_root / "monitoring/configuration.json").resolve()

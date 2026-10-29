@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 import pytest
 
-import astar.training.continuation_wandb as tracking
+import gear_nav.training.continuation_wandb as tracking
 
 SOURCE = "yohanab/astar/4wzq1hru"
 

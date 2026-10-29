@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=astar-a6000x4
+#SBATCH --job-name=gear-nav-a6000x4
 #SBATCH --output=slurm-%x-%j.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -20,7 +20,8 @@ set -euo pipefail
 REPO_ROOT="${SLURM_SUBMIT_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "${REPO_ROOT}"
 
-: "${ASTAR_DATA_ROOT:?Set ASTAR_DATA_ROOT to the prepared dataset directory}"
+GEAR_NAV_DATA_ROOT="${GEAR_NAV_DATA_ROOT:-${ASTAR_DATA_ROOT:-}}"
+: "${GEAR_NAV_DATA_ROOT:?Set GEAR_NAV_DATA_ROOT (or legacy ASTAR_DATA_ROOT) to the prepared dataset directory}"
 if [[ -x "${REPO_ROOT}/.venv/bin/astar-train" ]]; then
   TRAIN_COMMAND=("${REPO_ROOT}/.venv/bin/astar-train")
 else
@@ -55,7 +56,7 @@ srun --kill-on-bad-exit=1 --gpu-bind=none \
   --config-name checkpoints \
   --exp-name "${EXP_NAME:-astar_a6000x4_${SLURM_JOB_ID}}" \
   --project-name "${WANDB_PROJECT:-astar}" \
-  --data-root "${ASTAR_DATA_ROOT}" \
+  --data-root "${GEAR_NAV_DATA_ROOT}" \
   --train-split-ids-path "${REPO_ROOT}/configs/splits/train_clip_ids.txt" \
   --eval-split-ids-path "${REPO_ROOT}/configs/splits/eval_clip_ids.txt" \
   --pretrained-params "${REPO_ROOT}/checkpoints/pi05_base/params" \

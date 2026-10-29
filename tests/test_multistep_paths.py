@@ -3,8 +3,8 @@ import json
 import numpy as np
 import pytest
 
-from astar.evaluation.multistep_paths import resolve_capture_depths
-from astar.evaluation.multistep_paths import trained_depth_from_replay
+from gear_nav.evaluation.multistep_paths import resolve_capture_depths
+from gear_nav.evaluation.multistep_paths import trained_depth_from_replay
 
 
 def test_trained_depth_comes_from_replay_round_index(tmp_path):

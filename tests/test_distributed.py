@@ -58,7 +58,7 @@ def worker(address, rank, directory):
     from test_training_resume import TinyField
     from test_training_resume import TinyLoader
 
-    import astar.training.aggregation as trainer
+    import gear_nav.training.aggregation as trainer
 
     root = Path(directory)
     managers = []

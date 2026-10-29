@@ -1,4 +1,4 @@
-"""Download and expose the official pi0.5 base parameters for ASTAR."""
+"""Download and expose the official pi0.5 base parameters for GEAR-Nav."""
 
 from __future__ import annotations
 

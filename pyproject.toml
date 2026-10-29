@@ -3,9 +3,9 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "astar-navigation"
+name = "gear-nav"
 version = "0.1.0"
-description = "Action-Label-Free Spatial Trajectory Aggregation and Refinement"
+description = "GEAR-Nav navigation research stack"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 license = { file = "LICENSE" }
@@ -28,12 +28,18 @@ dev = [
 ]
 
 [project.scripts]
-astar-train = "astar.training.aggregation:cli"
-astar-train-distributed = "astar.training.distributed:main"
-astar-eval = "astar.evaluation.aggregation:cli"
-astar-download-pi05 = "astar.tools.download_pi05:main"
-astar-verify = "astar.tools.verify_installation:main"
-astar-wandb-sidecar = "astar.tools.wandb_sidecar:main"
+gear-nav-train = "gear_nav.training.aggregation:cli"
+astar-train = "gear_nav.training.aggregation:cli"
+gear-nav-train-distributed = "gear_nav.training.distributed:main"
+astar-train-distributed = "gear_nav.training.distributed:main"
+gear-nav-eval = "gear_nav.evaluation.aggregation:cli"
+astar-eval = "gear_nav.evaluation.aggregation:cli"
+gear-nav-download-pi05 = "gear_nav.tools.download_pi05:main"
+astar-download-pi05 = "gear_nav.tools.download_pi05:main"
+gear-nav-verify = "gear_nav.tools.verify_installation:main"
+astar-verify = "gear_nav.tools.verify_installation:main"
+gear-nav-wandb-sidecar = "gear_nav.tools.wandb_sidecar:main"
+astar-wandb-sidecar = "gear_nav.tools.wandb_sidecar:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

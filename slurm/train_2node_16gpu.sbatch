@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=astar-train
+#SBATCH --job-name=gear-nav-train
 #SBATCH --output=slurm-%x-%j.out
 #SBATCH --nodes=2
 #SBATCH --ntasks=2
@@ -18,7 +18,8 @@ set -euo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${REPO_ROOT}"
 
-: "${ASTAR_DATA_ROOT:?Set ASTAR_DATA_ROOT to the prepared dataset directory}"
+GEAR_NAV_DATA_ROOT="${GEAR_NAV_DATA_ROOT:-${ASTAR_DATA_ROOT:-}}"
+: "${GEAR_NAV_DATA_ROOT:?Set GEAR_NAV_DATA_ROOT (or legacy ASTAR_DATA_ROOT) to the prepared dataset directory}"
 if [[ -x "${REPO_ROOT}/.venv/bin/astar-train-distributed" ]]; then
   TRAIN_COMMAND=("${REPO_ROOT}/.venv/bin/astar-train-distributed")
 else
@@ -42,7 +43,7 @@ export JAX_COMPILATION_CACHE_DIR="${JAX_COMPILATION_CACHE_DIR:-/tmp/astar_jax_${
 export MPLCONFIGDIR="${MPLCONFIGDIR:-/tmp/astar_mpl_${SLURM_JOB_ID}}"
 
 COORDINATOR_HOST="$(scontrol show hostnames "${SLURM_JOB_NODELIST}" | head -n 1)"
-export ASTAR_JAX_COORDINATOR="${COORDINATOR_HOST}:$((20000 + SLURM_JOB_ID % 30000))"
+export GEAR_NAV_JAX_COORDINATOR="${COORDINATOR_HOST}:$((20000 + SLURM_JOB_ID % 30000))"
 
 WANDB_ARGS=(--no-wandb-enabled)
 if [[ "${WANDB_ENABLED:-0}" == "1" ]]; then
@@ -55,7 +56,7 @@ srun --kill-on-bad-exit=1 --gpu-bind=none \
   "${TRAIN_COMMAND[@]}" \
   --exp-name "${EXP_NAME:-astar_clean_${SLURM_JOB_ID}}" \
   --project-name "${WANDB_PROJECT:-astar}" \
-  --data-root "${ASTAR_DATA_ROOT}" \
+  --data-root "${GEAR_NAV_DATA_ROOT}" \
   --train-split-ids-path "${REPO_ROOT}/configs/splits/train_clip_ids.txt" \
   --eval-split-ids-path "${REPO_ROOT}/configs/splits/eval_clip_ids.txt" \
   --pretrained-params "${REPO_ROOT}/checkpoints/pi05_base/params" \

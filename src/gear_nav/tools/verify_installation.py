@@ -1,4 +1,4 @@
-"""Verify ASTAR's package, OpenPI dependency, and optional base checkpoint."""
+"""Verify GEAR-Nav's package, OpenPI dependency, and optional base checkpoint."""
 
 from __future__ import annotations
 
@@ -9,8 +9,8 @@ from typing import Sequence
 import jax
 import openpi
 
-from astar.tools.download_pi05 import DEFAULT_OUTPUT
-from astar.tools.download_pi05 import validate_checkpoint
+from gear_nav.tools.download_pi05 import DEFAULT_OUTPUT
+from gear_nav.tools.download_pi05 import validate_checkpoint
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:

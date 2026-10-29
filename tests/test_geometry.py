@@ -8,21 +8,21 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from astar.path_sampler import DynamicWaypointPriorConfig
-import astar.training.aggregation as aggregation_trainer
-from astar.training.aggregation import GROUND_TRUTH_METRIC_KEYS
-from astar.training.aggregation import ObstacleEnergyConfig
-from astar.training.aggregation import OracleOnlyNavigationDataset
-from astar.training.aggregation import _validate_args
-from astar.training.aggregation import backtracking_projected_step
-from astar.training.aggregation import compute_obstacle_energy
-from astar.training.aggregation import condition_fingerprint
-from astar.training.aggregation import decode_bounded_waypoint_path
-from astar.training.aggregation import parse_args
-from astar.training.aggregation import project_bounded_actions
-from astar.training.aggregation import query_energy_oracle
-from astar.training.aggregation import sanitize_metric_tensors
-from astar.training.replay import AggregationReplay
+from gear_nav.path_sampler import DynamicWaypointPriorConfig
+import gear_nav.training.aggregation as aggregation_trainer
+from gear_nav.training.aggregation import GROUND_TRUTH_METRIC_KEYS
+from gear_nav.training.aggregation import ObstacleEnergyConfig
+from gear_nav.training.aggregation import OracleOnlyNavigationDataset
+from gear_nav.training.aggregation import _validate_args
+from gear_nav.training.aggregation import backtracking_projected_step
+from gear_nav.training.aggregation import compute_obstacle_energy
+from gear_nav.training.aggregation import condition_fingerprint
+from gear_nav.training.aggregation import decode_bounded_waypoint_path
+from gear_nav.training.aggregation import parse_args
+from gear_nav.training.aggregation import project_bounded_actions
+from gear_nav.training.aggregation import query_energy_oracle
+from gear_nav.training.aggregation import sanitize_metric_tensors
+from gear_nav.training.replay import AggregationReplay
 
 
 def _energy_fixture():

@@ -5,10 +5,10 @@ import hashlib
 import numpy as np
 import pytest
 
-from astar.training.continuation_data import FullPartitionBatches
-from astar.training.continuation_data import dataset_resume_metadata
-from astar.training.continuation_data import deterministic_batch_seed
-from astar.training.continuation_data import metadata_signature
+from gear_nav.training.continuation_data import FullPartitionBatches
+from gear_nav.training.continuation_data import dataset_resume_metadata
+from gear_nav.training.continuation_data import deterministic_batch_seed
+from gear_nav.training.continuation_data import metadata_signature
 
 
 @pytest.mark.parametrize("dataset_size,batch_size", [(37, 8), (32, 8), (3, 8), (1, 1)])
