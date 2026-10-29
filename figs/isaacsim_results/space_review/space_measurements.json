@@ -1,0 +1,23 @@
+{
+  "submission_proof_pages": 8,
+  "column_width_in": 3.4000015220700153,
+  "text_width_in": 7.0,
+  "text_height_in": 9.464508094645081,
+  "current_bar_figure_at_full_width": {
+    "width_in": 7.0,
+    "height_in": 5.306451612903225,
+    "area_sq_in": 37.14516129032258
+  },
+  "compact_proposal": {
+    "width_in": 3.4000015220700153,
+    "height_in": 2.45,
+    "area_sq_in": 8.330003729071539
+  },
+  "figure_area_reduction_percent": 77.57445804592116,
+  "comparison_excludes_external_captions_and_float_spacing": true,
+  "pipeline_image_height_in": 6.366688467407892,
+  "model_image_height_in": 4.9640300000124356,
+  "teaser_image_height_in": 3.093307172443863,
+  "realworld_image_height_in": 1.9741944321696863,
+  "paper_files_unchanged": true
+}
