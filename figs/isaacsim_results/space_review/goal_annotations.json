@@ -1,5 +1,5 @@
 {
-  "method": "Manual visual annotation of the person matching the recorded instruction; boxes are normalized image coordinates, not calibrated world projections.",
+  "method": "Manual visual annotation of the person matching the recorded instruction. Target bounds and goal star positions use normalized image coordinates from the top left; they are not calibrated world projections.",
   "scope": "Goals of the illustrative recorded runs; not linked to the aggregate evaluation table.",
   "views": [
     {
@@ -14,9 +14,9 @@
         0.042,
         0.29
       ],
-      "label_xy_axes": [
-        0.29,
-        0.85
+      "goal_marker_uv_top_left": [
+        0.511,
+        0.1515
       ]
     },
     {
@@ -31,9 +31,9 @@
         0.046,
         0.345
       ],
-      "label_xy_axes": [
-        0.7,
-        0.83
+      "goal_marker_uv_top_left": [
+        0.498,
+        0.13375
       ]
     },
     {
@@ -48,9 +48,9 @@
         0.044,
         0.315
       ],
-      "label_xy_axes": [
-        0.38,
-        0.84
+      "goal_marker_uv_top_left": [
+        0.621,
+        0.15525
       ]
     }
   ]

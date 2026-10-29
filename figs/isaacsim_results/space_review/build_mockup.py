@@ -9,8 +9,8 @@ os.environ.setdefault('MPLCONFIGDIR', str(Path(tempfile.gettempdir()) / 'gear_sp
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.patheffects as pe
-from matplotlib.patches import Rectangle
+from matplotlib.path import Path as MarkerPath
+import numpy as np
 from PIL import Image
 
 HERE = Path(__file__).resolve().parent
@@ -18,6 +18,11 @@ SOURCE = HERE.parent
 DATA = json.loads((SOURCE / 'evidence.json').read_text())
 STYLE = json.loads((SOURCE / 'style.json').read_text())
 GOALS = json.loads((HERE / 'goal_annotations.json').read_text())['views']
+# Same five-point geometry and gold fill as teaser/compact/build_compact.py.
+theta = np.arange(10)*np.pi/5 + np.pi/2
+radii = np.where(np.arange(10)%2 == 0, 1., .43)
+star_vertices = np.column_stack([np.cos(theta)*radii, np.sin(theta)*radii])
+GOAL_STAR = MarkerPath(np.vstack([star_vertices, star_vertices[0]]), closed=True)
 plt.rcParams.update({'font.family': STYLE['font_family'], 'svg.fonttype': 'none',
                      'pdf.fonttype': 42, 'svg.hashsalt': 'gear-compact-result-proposal',
                      'text.color': '#1A1A1A'})
@@ -37,19 +42,10 @@ def main():
         goal = GOALS[i]
         assert goal['image'] == view['image']
         assert hashlib.sha256((SOURCE / view['image']).read_bytes()).hexdigest() == goal['image_sha256']
-        gx, gy, gw, gh = goal['target_box_xywh_top_left']
-        outline = Rectangle((gx, 1-gy-gh), gw, gh, transform=ax.transAxes,
-                            fill=False, edgecolor='#FFDF35', linewidth=.8)
-        outline.set_path_effects([pe.Stroke(linewidth=1.4, foreground='#242424'), pe.Normal()])
-        ax.add_patch(outline)
-        label_x, label_y = goal['label_xy_axes']
-        edge_x = gx if label_x < gx else gx+gw
-        ax.annotate('Goal', xy=(edge_x, 1-gy-gh*.35), xycoords='axes fraction',
-                    xytext=(label_x, label_y), textcoords='axes fraction',
-                    fontsize=6.5, ha='center', va='center', color='#1A1A1A',
-                    bbox=dict(boxstyle='round,pad=.13', fc='#FFDF35', ec='#242424', lw=.4),
-                    arrowprops=dict(arrowstyle='-', color='#FFDF35', lw=.8,
-                                    path_effects=[pe.Stroke(linewidth=1.4, foreground='#242424'), pe.Normal()]))
+        u, v = goal['goal_marker_uv_top_left']
+        ax.plot(u, 1-v, transform=ax.transAxes, linestyle='none', marker=GOAL_STAR,
+                markersize=8, markerfacecolor='#FFC52F', markeredgecolor='#242424',
+                markeredgewidth=.6, zorder=5, gid=f'goal-star-{i+1}')
         fig.text(x+w/2, .080, f"({chr(97+i)}) {view['name']}", fontsize=7, ha='center')
     for ext in ['pdf', 'svg', 'png']:
         path = HERE / f'compact_proposal.{ext}'

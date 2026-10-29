@@ -3,7 +3,7 @@
 For the main-paper layout, the selected proposal is now an
 [images-only scene strip](space_review/compact_proposal.pdf). Evaluation values
 stay in the paper's existing table; the figure does not repeat them.
-Yellow outlines and “Goal” callouts identify the target people in these
+Gold stars identify the target people in these
 illustrative recordings. The recorded instructions, source hashes, and manual
 image coordinates are saved in `space_review/goal_annotations.json`.
 

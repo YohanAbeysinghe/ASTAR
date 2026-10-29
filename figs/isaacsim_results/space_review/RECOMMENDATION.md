@@ -1,7 +1,7 @@
 # Space recommendation for the current paper
 
 **Keep the existing evaluation table in the paper. The figure should contain
-only three scene images, goal callouts, and short labels.** The revised mockup is a shallow,
+only three scene images, goal stars, and short labels.** The revised mockup is a shallow,
 single-column qualitative strip with no evaluation numbers, charts, or extra
 table. The nine-chart version can be used in the supplement or presentation.
 
@@ -38,8 +38,8 @@ replaced at the user's request to avoid repeating evaluations in the figure.
 1. **Simulation: images in the figure, numbers in the existing table.** Use
    three equal-sized recorded views with 7 pt environment labels. The figure
    provides scene context; Table I already contains all 36 evaluation values.
-   Yellow outlines and 6.5 pt “Goal” callouts identify the target people from
-   each recorded instruction without increasing the figure height.
+   Gold stars identify the target people from each recorded instruction,
+   matching the other diagrams without increasing the figure height.
 2. **Real-world: keep the current qualitative figure and result table.** Its
    image is already compact. Add the measured GEAR-Nav row when available;
    avoid another chart repeating those same values.
@@ -85,8 +85,8 @@ option is the most efficient and least ambiguous choice.
   paper PDFs. All remain unchanged.
 - `build_mockup.py`: creates the compact proposal from the frozen comparison
   evidence and verifies protected files.
-- `goal_annotations.json`: recorded instructions, source hashes, and manually
-  placed target-person boxes. These are illustrative annotations, not
+- `goal_annotations.json`: recorded instructions, source hashes, target-person
+  bounds, and star positions. These are illustrative annotations, not
   calibrated projections or evidence linking the photos to aggregate results.
 
 No proposal was inserted into the paper, and the existing full simulation
